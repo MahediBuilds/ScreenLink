@@ -1,4 +1,4 @@
-```javascript
+
 let laptopOnline = false;
 
 let activeTyping = false;
@@ -744,4 +744,3 @@ setInterval(
     loadDevice,
     3000
 );
-```
