@@ -1,7 +1,0 @@
-{
-    "phone_ip": "",
-    "phone_port": 5000,
-    "laptop_port": 5001,
-    "heartbeat_interval": 10,
-    "connection_retry_interval": 10
-}

@@ -1,12 +1,12 @@
 _ignore_old/
 _ignore_tests/
 
-Laptop/screenshots/
-Laptop/logs/
+screenshots/
+logs/
 
-phone/logs/
+__phone/logs/
 
 __pycache__/
 
 
-Laptop/config/config.json
+config/config.json
