@@ -110,6 +110,20 @@ input {
     font-size: 15px;
 }
 
+textarea {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+
+    border: none;
+    border-radius: 8px;
+
+    font-family: monospace;
+    font-size: 15px;
+
+    resize: vertical;
+}
+
 .manual-form {
     max-width: 400px;
 }

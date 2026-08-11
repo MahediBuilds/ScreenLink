@@ -9,6 +9,7 @@ from flask import Flask, jsonify, send_file
 
 from config import load_config, save_config
 from logger import log, log_error, get_log_file
+from typer import type_text
 from network import get_local_ip
 from screenshot import capture_screen
 
@@ -355,6 +356,88 @@ def status():
         "status": "online"
 
     })
+    
+@app.route(
+    "/type",
+    methods=["POST"]
+)
+def type_endpoint():
+
+    log(
+        "========================================"
+    )
+
+    log(
+        "Typing request received"
+    )
+
+    try:
+
+        data = request.get_json()
+
+        if not data:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Missing JSON data"
+            }), 400
+
+        text = data.get("text")
+
+        if text is None:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Missing text"
+            }), 400
+
+        if not text:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Text cannot be empty"
+            }), 400
+
+        log(
+            f"Text length -> {len(text)}"
+        )
+
+        threading.Thread(
+            target=type_text,
+            args=(text,),
+            daemon=True
+        ).start()
+
+        log(
+            "Typing started"
+        )
+
+        return jsonify({
+
+            "success": True,
+
+            "message":
+                "Typing started"
+
+        })
+
+    except Exception as e:
+
+        log_error(
+            "Typing request failed: "
+            + str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message": str(e)
+
+        }), 500
 
 
 @app.route(

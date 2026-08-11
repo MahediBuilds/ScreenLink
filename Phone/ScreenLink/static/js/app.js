@@ -325,3 +325,115 @@ setInterval(
     loadDevices,
     5000
 );
+
+async function sendTyping() {
+
+    const text =
+        document.getElementById(
+            "typeText"
+        ).value;
+
+    const result =
+        document.getElementById(
+            "typeResult"
+        );
+
+    if (!text.trim()) {
+
+        result.className = "error";
+
+        result.textContent =
+            "Enter some text first.";
+
+        return;
+    }
+
+    result.className = "muted";
+
+    result.textContent =
+        "Starting typing...";
+
+    try {
+
+        const devicesResponse =
+            await fetch("/devices");
+
+        const devicesData =
+            await devicesResponse.json();
+
+        if (!devicesData.success) {
+
+            result.className = "error";
+
+            result.textContent =
+                "Failed to load devices.";
+
+            return;
+        }
+
+        const onlineDevice =
+            devicesData.devices.find(
+                device => device.online
+            );
+
+        if (!onlineDevice) {
+
+            result.className = "error";
+
+            result.textContent =
+                "No laptop is online.";
+
+            return;
+        }
+
+        const response =
+            await fetch(
+                "/type/" +
+                encodeURIComponent(
+                    onlineDevice.name
+                ),
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        text: text
+                    })
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!data.success) {
+
+            result.className =
+                "error";
+
+            result.textContent =
+                data.message ||
+                "Typing failed.";
+
+            return;
+        }
+
+        result.className =
+            "success";
+
+        result.textContent =
+            "Typing started.";
+
+    } catch (error) {
+
+        result.className =
+            "error";
+
+        result.textContent =
+            "Unable to start typing.";
+
+    }
+}

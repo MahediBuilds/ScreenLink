@@ -501,6 +501,134 @@ def screenshot(device_name):
     )
 
 
+@app.route(
+    "/type/<device_name>",
+    methods=["POST"]
+)
+def type_device(device_name):
+
+    log(
+        "========================================"
+    )
+
+    log(
+        "Typing request received"
+    )
+
+    log(
+        f"Device -> {device_name}"
+    )
+
+    device = device_manager.get_device(
+        device_name
+    )
+
+    if not device:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Device not found"
+
+        }), 404
+
+    if not device_manager.is_online(
+        device
+    ):
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Device is offline"
+
+        }), 503
+
+    try:
+
+        data = request.get_json()
+
+        if not data:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Missing JSON data"
+
+            }), 400
+
+        text = data.get("text")
+
+        if text is None:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Missing text"
+
+            }), 400
+
+        import requests
+
+        url = (
+            f"http://{device['ip']}:"
+            f"{device['port']}"
+            f"/type"
+        )
+
+        log(
+            f"Sending typing request -> "
+            f"{url}"
+        )
+
+        response = requests.post(
+
+            url,
+
+            json={
+                "text": text
+            },
+
+            timeout=5
+        )
+
+        log(
+            f"Laptop typing response -> "
+            f"{response.status_code}"
+        )
+
+        return (
+            response.text,
+            response.status_code,
+            {
+                "Content-Type":
+                    "application/json"
+            }
+        )
+
+    except Exception as e:
+
+        log_error(
+            "Typing request failed: "
+            + str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message": str(e)
+
+        }), 500
+
+
 def shutdown(
     signum=None,
     frame=None
