@@ -1,4 +1,5 @@
-let activeTypingDevice = null;
+let laptopOnline = false;
+let activeTyping = false;
 
 
 async function loadPhoneInfo() {
@@ -31,12 +32,12 @@ async function loadPhoneInfo() {
 }
 
 
-async function loadDevices() {
+async function loadDevice() {
 
     try {
 
         const response =
-            await fetch("/devices");
+            await fetch("/device");
 
         const data =
             await response.json();
@@ -44,15 +45,15 @@ async function loadDevices() {
         if (!data.success) {
 
             showDeviceMessage(
-                "Failed to load devices.",
+                "Unable to load laptop status.",
                 "error"
             );
 
             return;
         }
 
-        updateDevices(
-            data.devices
+        updateDevice(
+            data.device
         );
 
     } catch (error) {
@@ -66,199 +67,121 @@ async function loadDevices() {
 }
 
 
-function updateDevices(devices) {
+function updateDevice(device) {
 
     const container =
         document.getElementById(
-            "devices"
+            "device"
         );
 
-    const existing = new Map();
-
-    container
-        .querySelectorAll(".device")
-        .forEach(
-            element => {
-
-                existing.set(
-                    element.dataset.deviceName,
-                    element
-                );
-
-            }
+    const typeButton =
+        document.getElementById(
+            "typeButton"
         );
 
-    if (devices.length === 0) {
+    const stopButton =
+        document.getElementById(
+            "stopButton"
+        );
 
-        if (
-            !container.querySelector(
-                ".no-devices"
-            )
-        ) {
 
-            container.innerHTML =
-                '<p class="muted no-devices">No laptops connected.</p>';
+    if (!device) {
 
+        laptopOnline = false;
+
+        container.innerHTML = `
+
+            <p class="muted">
+                Waiting for laptop registration...
+            </p>
+
+        `;
+
+        typeButton.disabled = true;
+
+        if (!activeTyping) {
+            stopButton.disabled = true;
         }
 
         return;
     }
 
-    const emptyMessage =
-        container.querySelector(
-            ".no-devices"
-        );
 
-    if (emptyMessage) {
-        emptyMessage.remove();
-    }
+    laptopOnline =
+        device.online;
 
-    const currentNames =
-        new Set();
-
-    devices.forEach(
-        device => {
-
-            currentNames.add(
-                device.name
-            );
-
-            let element =
-                existing.get(
-                    device.name
-                );
-
-            if (!element) {
-
-                element =
-                    createDeviceElement(
-                        device
-                    );
-
-                container.appendChild(
-                    element
-                );
-
-            }
-
-            updateDeviceElement(
-                element,
-                device
-            );
-
-        }
-    );
-
-    existing.forEach(
-        (element, name) => {
-
-            if (
-                !currentNames.has(name)
-            ) {
-
-                element.remove();
-
-            }
-
-        }
-    );
-}
-
-
-function createDeviceElement(device) {
-
-    const div =
-        document.createElement(
-            "div"
-        );
-
-    div.className =
-        "device";
-
-    div.dataset.deviceName =
-        device.name;
-
-    div.innerHTML = `
-
-        <div class="device-name"></div>
-
-        <div class="device-ip"></div>
-
-        <div class="status"></div>
-
-        <div class="device-controls"></div>
-
-        <div class="screenshot-container"></div>
-
-    `;
-
-    return div;
-}
-
-
-function updateDeviceElement(
-    element,
-    device
-) {
-
-    element.querySelector(
-        ".device-name"
-    ).textContent =
-        device.name;
-
-    element.querySelector(
-        ".device-ip"
-    ).textContent =
-        `${device.ip}:${device.port}`;
-
-    const status =
-        element.querySelector(
-            ".status"
-        );
-
-    status.textContent =
-        device.online
-        ? "ONLINE"
-        : "OFFLINE";
-
-    status.className =
-        device.online
-        ? "status online"
-        : "status offline";
-
-    const controls =
-        element.querySelector(
-            ".device-controls"
-        );
 
     if (device.online) {
 
-        controls.innerHTML = `
+        container.innerHTML = `
 
-            <button
-                class="capture-button"
-                onclick="takeScreenshot(
-                    '${escapeHtml(device.name)}'
-                )"
-            >
-                Take Screenshot
-            </button>
+            <div class="device">
+
+                <div class="device-name">
+                    ${escapeHtml(device.name)}
+                </div>
+
+                <div class="device-ip">
+                    ${escapeHtml(device.ip)}:${device.port}
+                </div>
+
+                <div class="status online">
+                    ONLINE
+                </div>
+
+                <div class="device-controls">
+
+                    <button
+                        class="capture-button"
+                        onclick="takeScreenshot()"
+                    >
+                        Take Screenshot
+                    </button>
+
+                </div>
+
+                <div
+                    id="screenshot-container"
+                    class="screenshot-container"
+                ></div>
+
+            </div>
 
         `;
 
-    } else {
-
-        controls.innerHTML = "";
-
-        if (
-            activeTypingDevice
-            === device.name
-        ) {
-
-            activeTypingDevice = null;
-
+        if (!activeTyping) {
+            typeButton.disabled = false;
         }
 
+    } else {
+
+        container.innerHTML = `
+
+            <div class="device">
+
+                <div class="device-name">
+                    ${escapeHtml(device.name)}
+                </div>
+
+                <div class="device-ip">
+                    ${escapeHtml(device.ip)}:${device.port}
+                </div>
+
+                <div class="status offline">
+                    OFFLINE
+                </div>
+
+            </div>
+
+        `;
+
+        laptopOnline = false;
+
+        typeButton.disabled = true;
+
+        if (!activeTyping) {
+            stopButton.disabled = true;
+        }
     }
 }
 
@@ -270,37 +193,27 @@ function showDeviceMessage(
 
     const container =
         document.getElementById(
-            "devices"
+            "device"
         );
 
-    if (
-        container.querySelector(
-            ".device"
-        )
-    ) {
-        return;
-    }
-
     container.innerHTML =
-        `<p class="${className}">${escapeHtml(message)}</p>`;
+        `<p class="${className}">
+            ${escapeHtml(message)}
+        </p>`;
+
 }
 
 
-async function takeScreenshot(deviceName) {
-
-    const element =
-        document.querySelector(
-            `.device[data-device-name="${cssEscape(deviceName)}"]`
-        );
-
-    if (!element) {
-        return;
-    }
+async function takeScreenshot() {
 
     const container =
-        element.querySelector(
-            ".screenshot-container"
+        document.getElementById(
+            "screenshot-container"
         );
+
+    if (!container) {
+        return;
+    }
 
     container.innerHTML =
         '<p class="muted">Capturing screenshot...</p>';
@@ -309,10 +222,7 @@ async function takeScreenshot(deviceName) {
 
         const response =
             await fetch(
-                "/screenshot/" +
-                encodeURIComponent(
-                    deviceName
-                )
+                "/screenshot"
             );
 
         if (!response.ok) {
@@ -326,8 +236,10 @@ async function takeScreenshot(deviceName) {
                     await response.json();
 
                 if (data.message) {
+
                     message =
                         data.message;
+
                 }
 
             } catch {}
@@ -369,103 +281,6 @@ async function takeScreenshot(deviceName) {
 }
 
 
-async function manualConnect() {
-
-    const ip =
-        document.getElementById(
-            "manualIp"
-        ).value.trim();
-
-    const port =
-        document.getElementById(
-            "manualPort"
-        ).value.trim();
-
-    const result =
-        document.getElementById(
-            "manualResult"
-        );
-
-    if (!ip) {
-
-        result.className = "error";
-
-        result.textContent =
-            "Enter a laptop IP address.";
-
-        return;
-    }
-
-    result.className = "muted";
-
-    result.textContent =
-        "Checking laptop...";
-
-    try {
-
-        const response =
-            await fetch(
-                "/probe",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-
-                        ip: ip,
-
-                        port:
-                            parseInt(
-                                port || "5001"
-                            )
-
-                    })
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if (!data.success) {
-
-            result.className =
-                "error";
-
-            result.textContent =
-                data.message ||
-                "Unable to connect.";
-
-            return;
-        }
-
-        result.className =
-            "success";
-
-        result.textContent =
-            `${data.device.name} connected successfully.`;
-
-        document.getElementById(
-            "manualIp"
-        ).value = "";
-
-        await loadDevices();
-
-    } catch (error) {
-
-        result.className =
-            "error";
-
-        result.textContent =
-            "Connection failed.";
-
-    }
-}
-
-
 async function sendTyping() {
 
     const text =
@@ -488,9 +303,11 @@ async function sendTyping() {
             "stopButton"
         );
 
+
     if (!text.trim()) {
 
-        result.className = "error";
+        result.className =
+            "error";
 
         result.textContent =
             "Enter some text first.";
@@ -498,48 +315,36 @@ async function sendTyping() {
         return;
     }
 
+
+    if (!laptopOnline) {
+
+        result.className =
+            "error";
+
+        result.textContent =
+            "Laptop is offline.";
+
+        return;
+    }
+
+
     result.className =
         "muted";
 
     result.textContent =
         "Starting typing...";
 
+
     typeButton.disabled = true;
+
     stopButton.disabled = true;
+
 
     try {
 
-        const devicesResponse =
-            await fetch("/devices");
-
-        const devicesData =
-            await devicesResponse.json();
-
-        if (!devicesData.success) {
-
-            throw new Error(
-                "Failed to load devices."
-            );
-        }
-
-        const onlineDevice =
-            devicesData.devices.find(
-                device => device.online
-            );
-
-        if (!onlineDevice) {
-
-            throw new Error(
-                "No laptop is online."
-            );
-        }
-
         const response =
             await fetch(
-                "/type/" +
-                encodeURIComponent(
-                    onlineDevice.name
-                ),
+                "/type",
                 {
                     method: "POST",
 
@@ -554,8 +359,10 @@ async function sendTyping() {
                 }
             );
 
+
         const data =
             await response.json();
+
 
         if (!data.success) {
 
@@ -563,10 +370,11 @@ async function sendTyping() {
                 data.message ||
                 "Typing failed."
             );
+
         }
 
-        activeTypingDevice =
-            onlineDevice.name;
+
+        activeTyping = true;
 
         result.className =
             "success";
@@ -575,6 +383,7 @@ async function sendTyping() {
             "Typing started.";
 
         stopButton.disabled = false;
+
 
     } catch (error) {
 
@@ -585,8 +394,11 @@ async function sendTyping() {
             error.message ||
             "Unable to start typing.";
 
-        typeButton.disabled = false;
-        stopButton.disabled = true;
+        typeButton.disabled =
+            !laptopOnline;
+
+        stopButton.disabled =
+            true;
 
     }
 }
@@ -609,7 +421,8 @@ async function stopTyping() {
             "stopButton"
         );
 
-    if (!activeTypingDevice) {
+
+    if (!activeTyping) {
 
         result.className =
             "error";
@@ -620,6 +433,7 @@ async function stopTyping() {
         return;
     }
 
+
     stopButton.disabled = true;
 
     result.className =
@@ -628,21 +442,21 @@ async function stopTyping() {
     result.textContent =
         "Stopping typing...";
 
+
     try {
 
         const response =
             await fetch(
-                "/stop-type/" +
-                encodeURIComponent(
-                    activeTypingDevice
-                ),
+                "/stop-type",
                 {
                     method: "POST"
                 }
             );
 
+
         const data =
             await response.json();
+
 
         if (!data.success) {
 
@@ -650,7 +464,11 @@ async function stopTyping() {
                 data.message ||
                 "Failed to stop typing."
             );
+
         }
+
+
+        activeTyping = false;
 
         result.className =
             "success";
@@ -658,10 +476,12 @@ async function stopTyping() {
         result.textContent =
             "Typing stopped.";
 
-        activeTypingDevice = null;
+        typeButton.disabled =
+            !laptopOnline;
 
-        typeButton.disabled = false;
-        stopButton.disabled = true;
+        stopButton.disabled =
+            true;
+
 
     } catch (error) {
 
@@ -672,7 +492,8 @@ async function stopTyping() {
             error.message ||
             "Unable to stop typing.";
 
-        stopButton.disabled = false;
+        stopButton.disabled =
+            false;
 
     }
 }
@@ -681,41 +502,35 @@ async function stopTyping() {
 function escapeHtml(value) {
 
     return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-
-function cssEscape(value) {
-
-    if (
-        window.CSS &&
-        typeof window.CSS.escape === "function"
-    ) {
-
-        return window.CSS.escape(
-            value
-        );
-
-    }
-
-    return String(value)
-        .replace(
-            /([^\w-])/g,
-            "\\$1"
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
         );
 }
 
 
 loadPhoneInfo();
 
-loadDevices();
+loadDevice();
 
 
 setInterval(
-    loadDevices,
+    loadDevice,
     5000
 );

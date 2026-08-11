@@ -8,8 +8,10 @@ from flask import (
 
 import signal
 import sys
+import requests
 
 from config import load_config
+
 from logger import (
     log,
     log_error,
@@ -101,7 +103,7 @@ def status():
 def register():
 
     log(
-        "Registration request received"
+        "Laptop registration request received"
     )
 
     try:
@@ -123,29 +125,45 @@ def register():
             "device_name"
         )
 
-        ip = data.get("ip")
+        ip = data.get(
+            "ip"
+        )
 
-        port = data.get("port")
+        port = data.get(
+            "port"
+        )
 
         if not device_name:
+
             return jsonify({
+
                 "success": False,
+
                 "message":
                     "Missing device name"
+
             }), 400
 
         if not ip:
+
             return jsonify({
+
                 "success": False,
+
                 "message":
                     "Missing device IP"
+
             }), 400
 
         if not port:
+
             return jsonify({
+
                 "success": False,
+
                 "message":
                     "Missing device port"
+
             }), 400
 
         device_manager.register(
@@ -159,7 +177,21 @@ def register():
             "success": True,
 
             "message":
-                "Device registered successfully"
+                "Laptop registered successfully",
+
+            "device": {
+
+                "name":
+                    device_name,
+
+                "ip":
+                    ip,
+
+                "port":
+                    int(port)
+
+            }
+
         })
 
     except Exception as e:
@@ -173,7 +205,8 @@ def register():
 
             "success": False,
 
-            "message": str(e)
+            "message":
+                str(e)
 
         }), 500
 
@@ -203,9 +236,13 @@ def heartbeat():
             "device_name"
         )
 
-        ip = data.get("ip")
+        ip = data.get(
+            "ip"
+        )
 
-        port = data.get("port")
+        port = data.get(
+            "port"
+        )
 
         if not device_name:
 
@@ -218,19 +255,21 @@ def heartbeat():
 
             }), 400
 
-        updated = (
-            device_manager.heartbeat(
-                device_name,
-                ip,
-                port
-            )
+        updated = device_manager.heartbeat(
+
+            device_name,
+
+            ip,
+
+            port
+
         )
 
         if not updated:
 
             log(
                 f"Heartbeat from unknown "
-                f"device -> {device_name}"
+                f"laptop -> {device_name}"
             )
 
             return jsonify({
@@ -238,7 +277,7 @@ def heartbeat():
                 "success": False,
 
                 "message":
-                    "Device not registered"
+                    "Laptop not registered"
 
             }), 404
 
@@ -248,6 +287,7 @@ def heartbeat():
 
             "message":
                 "Heartbeat received"
+
         })
 
     except Exception as e:
@@ -261,170 +301,35 @@ def heartbeat():
 
             "success": False,
 
-            "message": str(e)
+            "message":
+                str(e)
 
         }), 500
 
 
 @app.route(
-    "/devices",
+    "/device",
     methods=["GET"]
 )
-def devices():
+def device():
 
-    log(
-        "Device list requested"
-    )
+    laptop = device_manager.get_status()
 
     return jsonify({
 
         "success": True,
 
-        "devices":
-            device_manager.get_devices()
+        "device":
+            laptop
+
     })
 
 
 @app.route(
-    "/probe",
-    methods=["POST"]
-)
-def probe():
-
-    log(
-        "Manual device probe requested"
-    )
-
-    try:
-
-        data = request.get_json()
-
-        ip = data.get("ip")
-
-        if not ip:
-
-            return jsonify({
-
-                "success": False,
-
-                "message":
-                    "IP address required"
-
-            }), 400
-
-        port = int(
-            data.get(
-                "port",
-                5001
-            )
-        )
-
-        url = (
-            f"http://{ip}:{port}"
-            f"/status"
-        )
-
-        log(
-            f"Probing laptop -> {url}"
-        )
-
-        import requests
-
-        response = requests.get(
-            url,
-            timeout=5
-        )
-
-        if response.status_code != 200:
-
-            return jsonify({
-
-                "success": False,
-
-                "message":
-                    "Laptop returned an error"
-
-            }), 400
-
-        laptop = response.json()
-
-        if not laptop.get("success"):
-
-            return jsonify({
-
-                "success": False,
-
-                "message":
-                    "Invalid ScreenLink laptop"
-
-            }), 400
-
-        device_name = laptop.get(
-            "device_name"
-        )
-
-        if not device_name:
-
-            return jsonify({
-
-                "success": False,
-
-                "message":
-                    "Laptop did not provide "
-                    "a device name"
-
-            }), 400
-
-        device_manager.add_manual_device(
-
-            device_name,
-
-            ip,
-
-            port
-        )
-
-        return jsonify({
-
-            "success": True,
-
-            "message":
-                "Laptop connected",
-
-            "device": {
-
-                "name":
-                    device_name,
-
-                "ip":
-                    ip,
-
-                "port":
-                    port
-            }
-        })
-
-    except Exception as e:
-
-        log_error(
-            "Probe failed: "
-            + str(e)
-        )
-
-        return jsonify({
-
-            "success": False,
-
-            "message": str(e)
-
-        }), 500
-
-
-@app.route(
-    "/screenshot/<device_name>",
+    "/screenshot",
     methods=["GET"]
 )
-def screenshot(device_name):
+def screenshot():
 
     log(
         "========================================"
@@ -434,21 +339,13 @@ def screenshot(device_name):
         "Screenshot request received"
     )
 
-    log(
-        f"Device -> {device_name}"
-    )
-
-    device = (
-        device_manager.get_device(
-            device_name
-        )
-    )
+    device = device_manager.get_device()
 
     if not device:
 
         log(
             "Screenshot failed: "
-            "device not found"
+            "no laptop registered"
         )
 
         return jsonify({
@@ -456,17 +353,15 @@ def screenshot(device_name):
             "success": False,
 
             "message":
-                "Device not found"
+                "No laptop registered"
 
         }), 404
 
-    if not device_manager.is_online(
-        device
-    ):
+    if not device_manager.is_online():
 
         log(
             "Screenshot failed: "
-            "device is offline"
+            "laptop is offline"
         )
 
         return jsonify({
@@ -474,7 +369,7 @@ def screenshot(device_name):
             "success": False,
 
             "message":
-                "Device is offline"
+                "Laptop is offline"
 
         }), 503
 
@@ -498,14 +393,15 @@ def screenshot(device_name):
         result["data"],
 
         mimetype="image/png"
+
     )
 
 
 @app.route(
-    "/type/<device_name>",
+    "/type",
     methods=["POST"]
 )
-def type_device(device_name):
+def type_device():
 
     log(
         "========================================"
@@ -515,13 +411,7 @@ def type_device(device_name):
         "Typing request received"
     )
 
-    log(
-        f"Device -> {device_name}"
-    )
-
-    device = device_manager.get_device(
-        device_name
-    )
+    device = device_manager.get_device()
 
     if not device:
 
@@ -530,20 +420,18 @@ def type_device(device_name):
             "success": False,
 
             "message":
-                "Device not found"
+                "No laptop registered"
 
         }), 404
 
-    if not device_manager.is_online(
-        device
-    ):
+    if not device_manager.is_online():
 
         return jsonify({
 
             "success": False,
 
             "message":
-                "Device is offline"
+                "Laptop is offline"
 
         }), 503
 
@@ -562,7 +450,9 @@ def type_device(device_name):
 
             }), 400
 
-        text = data.get("text")
+        text = data.get(
+            "text"
+        )
 
         if text is None:
 
@@ -574,8 +464,6 @@ def type_device(device_name):
                     "Missing text"
 
             }), 400
-
-        import requests
 
         url = (
             f"http://{device['ip']}:"
@@ -597,6 +485,7 @@ def type_device(device_name):
             },
 
             timeout=5
+
         )
 
         log(
@@ -624,7 +513,94 @@ def type_device(device_name):
 
             "success": False,
 
-            "message": str(e)
+            "message":
+                str(e)
+
+        }), 500
+
+
+@app.route(
+    "/stop-type",
+    methods=["POST"]
+)
+def stop_type():
+
+    log(
+        "Stop typing request received"
+    )
+
+    device = device_manager.get_device()
+
+    if not device:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "No laptop registered"
+
+        }), 404
+
+    if not device_manager.is_online():
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Laptop is offline"
+
+        }), 503
+
+    try:
+
+        url = (
+            f"http://{device['ip']}:"
+            f"{device['port']}"
+            f"/stop-type"
+        )
+
+        log(
+            f"Sending stop typing request -> "
+            f"{url}"
+        )
+
+        response = requests.post(
+
+            url,
+
+            timeout=5
+
+        )
+
+        log(
+            f"Laptop stop typing response -> "
+            f"{response.status_code}"
+        )
+
+        return (
+            response.text,
+            response.status_code,
+            {
+                "Content-Type":
+                    "application/json"
+            }
+        )
+
+    except Exception as e:
+
+        log_error(
+            "Stop typing request failed: "
+            + str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                str(e)
 
         }), 500
 
@@ -689,7 +665,7 @@ if __name__ == "__main__":
 
     print("=" * 45)
     print(
-        "Waiting for laptops..."
+        "Waiting for laptop..."
     )
     print("=" * 45)
 
@@ -730,6 +706,7 @@ if __name__ == "__main__":
             debug=False,
 
             use_reloader=False
+
         )
 
     except KeyboardInterrupt:

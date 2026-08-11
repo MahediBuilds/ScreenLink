@@ -24,11 +24,9 @@ class DeviceManager:
 
     def __init__(self, heartbeat_timeout):
 
-        self.heartbeat_timeout = (
-            heartbeat_timeout
-        )
+        self.heartbeat_timeout = heartbeat_timeout
 
-        self.devices = {}
+        self.device = None
 
         self.load()
 
@@ -43,7 +41,7 @@ class DeviceManager:
             DEVICE_FILE
         ):
 
-            self.devices = {}
+            self.device = None
 
             self.save()
 
@@ -57,21 +55,45 @@ class DeviceManager:
                 encoding="utf-8"
             ) as f:
 
-                self.devices = json.load(f)
+                data = json.load(f)
 
-            log(
-                f"Loaded {len(self.devices)} "
-                f"registered device(s)"
-            )
+            if isinstance(data, dict) and data:
+
+                if "name" in data:
+
+                    self.device = data
+
+                else:
+
+                    devices = list(data.values())
+
+                    if devices:
+
+                        self.device = devices[0]
+
+                    else:
+
+                        self.device = None
+
+            else:
+
+                self.device = None
+
+            if self.device:
+
+                log(
+                    "Loaded registered laptop -> "
+                    f"{self.device['name']}"
+                )
 
         except Exception as e:
 
             log_error(
-                "Failed to load devices: "
+                "Failed to load device: "
                 + str(e)
             )
 
-            self.devices = {}
+            self.device = None
 
     def save(self):
 
@@ -89,7 +111,7 @@ class DeviceManager:
             ) as f:
 
                 json.dump(
-                    self.devices,
+                    self.device or {},
                     f,
                     indent=4
                 )
@@ -97,7 +119,7 @@ class DeviceManager:
         except Exception as e:
 
             log_error(
-                "Failed to save devices: "
+                "Failed to save device: "
                 + str(e)
             )
 
@@ -109,11 +131,10 @@ class DeviceManager:
     ):
 
         existing = (
-            device_name
-            in self.devices
+            self.device is not None
         )
 
-        self.devices[device_name] = {
+        self.device = {
 
             "name": device_name,
 
@@ -129,7 +150,7 @@ class DeviceManager:
         if existing:
 
             log(
-                f"Device re-registered -> "
+                f"Laptop re-registered -> "
                 f"{device_name} "
                 f"({ip}:{port})"
             )
@@ -137,7 +158,7 @@ class DeviceManager:
         else:
 
             log(
-                f"Device registered -> "
+                f"Laptop registered -> "
                 f"{device_name} "
                 f"({ip}:{port})"
             )
@@ -149,66 +170,44 @@ class DeviceManager:
         port=None
     ):
 
-        if device_name not in self.devices:
+        if self.device is None:
 
             return False
 
-        device = (
-            self.devices[device_name]
+        if (
+            self.device["name"]
+            != device_name
+        ):
+
+            return False
+
+        self.device["last_seen"] = (
+            time.time()
         )
 
-        device["last_seen"] = time.time()
-
         if ip:
-            device["ip"] = ip
+            self.device["ip"] = ip
 
         if port:
-            device["port"] = int(port)
+            self.device["port"] = int(port)
 
         self.save()
 
         return True
 
-    def add_manual_device(
-        self,
-        device_name,
-        ip,
-        port
-    ):
+    def get_device(self):
 
-        self.devices[device_name] = {
+        return self.device
 
-            "name": device_name,
+    def is_online(self):
 
-            "ip": ip,
+        if self.device is None:
 
-            "port": int(port),
-
-            "last_seen": time.time()
-        }
-
-        self.save()
-
-        log(
-            f"Manual device added -> "
-            f"{device_name} "
-            f"({ip}:{port})"
-        )
-
-    def get_device(
-        self,
-        device_name
-    ):
-
-        return self.devices.get(
-            device_name
-        )
-
-    def is_online(self, device):
+            return False
 
         elapsed = (
             time.time()
-            - device["last_seen"]
+            - self.device["last_seen"]
         )
 
         return (
@@ -216,50 +215,46 @@ class DeviceManager:
             <= self.heartbeat_timeout
         )
 
-    def get_devices(self):
+    def get_status(self):
 
-        result = []
+        if self.device is None:
 
-        for device in self.devices.values():
+            return None
 
-            result.append({
+        return {
 
-                "name": device["name"],
+            "name":
+                self.device["name"],
 
-                "ip": device["ip"],
+            "ip":
+                self.device["ip"],
 
-                "port": device["port"],
+            "port":
+                self.device["port"],
 
-                "online": self.is_online(
-                    device
-                ),
+            "online":
+                self.is_online(),
 
-                "last_seen_seconds":
-                    round(
-                        time.time()
-                        - device["last_seen"],
-                        1
-                    )
-            })
+            "last_seen_seconds":
+                round(
+                    time.time()
+                    - self.device["last_seen"],
+                    1
+                )
+        }
 
-        return result
+    def remove_device(self):
 
-    def remove_device(
-        self,
-        device_name
-    ):
+        if self.device is not None:
 
-        if device_name in self.devices:
+            name = self.device["name"]
 
-            del self.devices[
-                device_name
-            ]
+            self.device = None
 
             self.save()
 
             log(
-                f"Device removed -> "
-                f"{device_name}"
+                f"Laptop removed -> {name}"
             )
 
             return True
