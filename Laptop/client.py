@@ -4,8 +4,7 @@ import time
 import sys
 
 import requests
-
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify, send_file, request
 
 from config import load_config, save_config
 from logger import log, log_error, get_log_file
