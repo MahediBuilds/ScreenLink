@@ -71,11 +71,24 @@
             rows="8"
         ></textarea>
 
-        <button
-            onclick="sendTyping()"
-        >
-            Type on Laptop
-        </button>
+        <div class="typing-buttons">
+
+            <button
+                id="typeButton"
+                onclick="sendTyping()"
+            >
+                Type on Laptop
+            </button>
+
+            <button
+                id="stopButton"
+                onclick="stopTyping()"
+                disabled
+            >
+                Stop Typing
+            </button>
+
+        </div>
 
         <p id="typeResult"></p>
 

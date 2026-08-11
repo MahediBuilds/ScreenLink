@@ -8,7 +8,7 @@ from flask import Flask, jsonify, send_file, request
 
 from config import load_config, save_config
 from logger import log, log_error, get_log_file
-from typer import type_text
+from typer import type_text, stop_typing
 from network import get_local_ip
 from screenshot import capture_screen
 
@@ -36,6 +36,7 @@ DEVICE_NAME = socket.gethostname()
 
 running = True
 registered = False
+typing_thread = None
 
 
 def phone_base_url():
@@ -355,12 +356,15 @@ def status():
         "status": "online"
 
     })
-    
+
+
 @app.route(
     "/type",
     methods=["POST"]
 )
 def type_endpoint():
+
+    global typing_thread
 
     log(
         "========================================"
@@ -372,14 +376,31 @@ def type_endpoint():
 
     try:
 
+        if (
+            typing_thread is not None
+            and typing_thread.is_alive()
+        ):
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Typing is already in progress"
+
+            }), 409
+
         data = request.get_json()
 
         if not data:
 
             return jsonify({
+
                 "success": False,
+
                 "message":
                     "Missing JSON data"
+
             }), 400
 
         text = data.get("text")
@@ -387,28 +408,40 @@ def type_endpoint():
         if text is None:
 
             return jsonify({
+
                 "success": False,
+
                 "message":
                     "Missing text"
+
             }), 400
 
         if not text:
 
             return jsonify({
+
                 "success": False,
+
                 "message":
                     "Text cannot be empty"
+
             }), 400
 
         log(
             f"Text length -> {len(text)}"
         )
 
-        threading.Thread(
+        typing_thread = threading.Thread(
+
             target=type_text,
+
             args=(text,),
+
             daemon=True
-        ).start()
+
+        )
+
+        typing_thread.start()
 
         log(
             "Typing started"
@@ -427,6 +460,49 @@ def type_endpoint():
 
         log_error(
             "Typing request failed: "
+            + str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message": str(e)
+
+        }), 500
+
+
+@app.route(
+    "/stop-type",
+    methods=["POST"]
+)
+def stop_type_endpoint():
+
+    log(
+        "Stop typing request received"
+    )
+
+    try:
+
+        stop_typing()
+
+        log(
+            "Typing stop signal sent"
+        )
+
+        return jsonify({
+
+            "success": True,
+
+            "message":
+                "Typing stopped"
+
+        })
+
+    except Exception as e:
+
+        log_error(
+            "Stop typing failed: "
             + str(e)
         )
 
@@ -547,6 +623,8 @@ def shutdown():
     global running
 
     running = False
+
+    stop_typing()
 
     log(
         "ScreenLink laptop shutting down"

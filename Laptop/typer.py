@@ -1,6 +1,7 @@
 import platform
 import time
 import random
+import threading
 
 
 MIN_WPM, MAX_WPM = 10, 50
@@ -14,6 +15,8 @@ MAX_LINE_LEN = 300
 
 
 SYSTEM = platform.system()
+
+stop_event = threading.Event()
 
 
 if SYSTEM == "Windows":
@@ -96,10 +99,20 @@ def write_text(text):
 
 def type_code(lines):
 
+    stop_event.clear()
+
     indent_stack = []
     line_count = 0
 
     for line in lines:
+
+        if stop_event.is_set():
+
+            log_message(
+                "Typing stopped"
+            )
+
+            return False
 
         if (
             not line.strip()
@@ -123,9 +136,13 @@ def type_code(lines):
 
                 indent_stack.pop()
 
+                if stop_event.is_set():
+                    return False
+
                 press_backspace()
 
-                time.sleep(0.25)
+                if stop_event.wait(0.25):
+                    return False
 
             continue
 
@@ -135,6 +152,9 @@ def type_code(lines):
         char_count = 0
 
         for ch in clean_line:
+
+            if stop_event.is_set():
+                return False
 
             char_count += 1
 
@@ -152,36 +172,40 @@ def type_code(lines):
                     wrong_char
                 )
 
-                time.sleep(
-                    random.uniform(
-                        0.05,
-                        0.2
-                    )
-                )
+                if stop_event.wait(
+                    random.uniform(0.05, 0.2)
+                ):
+                    return False
 
                 press_backspace()
 
-                time.sleep(
+                if stop_event.wait(
                     BACKSPACE_DELAY
-                )
+                ):
+                    return False
+
+            if stop_event.is_set():
+                return False
 
             write_text(ch)
 
             word_buffer += ch
 
-            time.sleep(
+            if stop_event.wait(
                 delay_for_char(ch)
-            )
+            ):
+                return False
 
             if ch in (" ", "\t"):
 
                 if word_buffer.strip():
 
-                    time.sleep(
+                    if stop_event.wait(
                         random.uniform(
                             *WORD_PAUSE_RANGE
                         )
-                    )
+                    ):
+                        return False
 
                 word_buffer = ""
 
@@ -189,19 +213,24 @@ def type_code(lines):
 
                 break
 
+        if stop_event.is_set():
+            return False
+
         write_text(" ")
 
-        time.sleep(0.001)
+        if stop_event.wait(0.001):
+            return False
 
         press_enter()
 
         line_count += 1
 
-        time.sleep(
+        if stop_event.wait(
             random.uniform(
                 *LINE_DELAY_RANGE
             )
-        )
+        ):
+            return False
 
         if (
             line_count
@@ -209,15 +238,31 @@ def type_code(lines):
             == 0
         ):
 
-            time.sleep(
+            if stop_event.wait(
                 PAUSE_DURATION
-            )
+            ):
+                return False
+
+    if stop_event.is_set():
+        return False
 
     press_enter()
+
+    return True
 
 
 def type_text(text):
 
-    lines = text.splitlines()
+    return type_code(
+        text.splitlines()
+    )
 
-    type_code(lines)
+
+def stop_typing():
+
+    stop_event.set()
+
+
+def log_message(message):
+
+    print(message)
