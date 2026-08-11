@@ -51,6 +51,14 @@ class ScreenshotManager:
 
                 return None
 
+            if not response.content:
+                log(
+                    "Laptop returned an empty "
+                    "screenshot"
+                )
+
+                return None
+
             timestamp = response.headers.get(
                 "X-ScreenLink-Timestamp"
             )
@@ -72,6 +80,7 @@ class ScreenshotManager:
                     f"{device['name']}_"
                     f"{timestamp}.png"
                 )
+
             else:
                 filename = (
                     f"{device['name']}_"
@@ -83,7 +92,11 @@ class ScreenshotManager:
                 filename
             )
 
-            with open(path, "wb") as f:
+            with open(
+                path,
+                "wb"
+            ) as f:
+
                 f.write(
                     response.content
                 )
