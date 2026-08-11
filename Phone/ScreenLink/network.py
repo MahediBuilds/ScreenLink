@@ -4,6 +4,14 @@ import re
 from logger import log_error
 
 
+PREFERRED_INTERFACES = [
+    "wlan2",
+    "wlan0",
+    "rndis0",
+    "usb0"
+]
+
+
 def get_phone_ip():
 
     try:
@@ -11,7 +19,8 @@ def get_phone_ip():
         result = subprocess.run(
             ["ifconfig"],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=5
         )
 
         output = (
@@ -19,16 +28,27 @@ def get_phone_ip():
             + result.stderr
         )
 
-        match = re.search(
-            r"rndis0:.*?inet "
-            r"(\d+\.\d+\.\d+\.\d+)",
-            output,
-            re.DOTALL
-        )
+        for interface in PREFERRED_INTERFACES:
 
-        if match:
+            pattern = (
+                rf"(?m)^{re.escape(interface)}:.*?"
+                rf"\binet\s+"
+                rf"(\d+\.\d+\.\d+\.\d+)"
+            )
 
-            return match.group(1)
+            match = re.search(
+                pattern,
+                output,
+                re.DOTALL
+            )
+
+            if match:
+
+                ip = match.group(1)
+
+                if ip != "127.0.0.1":
+
+                    return ip
 
     except Exception as e:
 

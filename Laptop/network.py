@@ -1,60 +1,34 @@
-import subprocess
-import re
+import socket
 
-from logger import log_error
-
-
-PREFERRED_INTERFACES = [
-    "wlan2",
-    "wlan0",
-    "rndis0",
-    "usb0"
-]
+from logger import log, log_error
 
 
-def get_phone_ip():
+def get_local_ip():
+
+    sock = socket.socket(
+        socket.AF_INET,
+        socket.SOCK_DGRAM
+    )
 
     try:
 
-        result = subprocess.run(
-            ["ifconfig"],
-            capture_output=True,
-            text=True,
-            timeout=5
+        sock.connect(
+            ("8.8.8.8", 80)
         )
 
-        output = (
-            result.stdout
-            + result.stderr
-        )
+        ip = sock.getsockname()[0]
 
-        for interface in PREFERRED_INTERFACES:
-
-            pattern = (
-                rf"(?m)^{re.escape(interface)}:.*?"
-                rf"\binet\s+"
-                rf"(\d+\.\d+\.\d+\.\d+)"
-            )
-
-            match = re.search(
-                pattern,
-                output,
-                re.DOTALL
-            )
-
-            if match:
-
-                ip = match.group(1)
-
-                if ip != "127.0.0.1":
-
-                    return ip
+        return ip
 
     except Exception as e:
 
         log_error(
-            "Unable to determine phone IP: "
+            "Unable to determine local IP: "
             + str(e)
         )
 
-    return "UNKNOWN"
+        return "127.0.0.1"
+
+    finally:
+
+        sock.close()
