@@ -1,4 +1,3 @@
-
 let laptopOnline = false;
 
 let activeTyping = false;
