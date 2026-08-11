@@ -1,6 +1,6 @@
 import socket
 
-from Laptop.logger import log, log_error
+from logger import log, log_error
 
 
 def get_local_ip():

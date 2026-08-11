@@ -7,10 +7,10 @@ import requests
 
 from flask import Flask, jsonify, send_file
 
-from Laptop.config import load_config, save_config
-from Laptop.logger import log, log_error, get_log_file
-from Laptop.network import get_local_ip
-from Laptop.screenshot import capture_screen
+from config import load_config, save_config
+from logger import log, log_error, get_log_file
+from network import get_local_ip
+from screenshot import capture_screen
 
 
 app = Flask(__name__)
@@ -379,9 +379,9 @@ def screenshot():
         f"Request time -> {request_time}"
     )
 
-    path = capture_screen()
+    result = capture_screen()
 
-    if not path:
+    if not result:
 
         log(
             "Screenshot request failed"
@@ -392,7 +392,7 @@ def screenshot():
             "success": False,
 
             "message":
-            "Screenshot capture failed"
+                "Screenshot capture failed"
 
         }), 500
 
@@ -402,18 +402,26 @@ def screenshot():
             "Sending screenshot to phone"
         )
 
-        return send_file(
+        response = send_file(
 
-            path,
+            result["path"],
 
             mimetype="image/png",
 
             as_attachment=False,
 
-            download_name=
-            path.split("\\")[-1]
-
+            download_name=result["filename"]
         )
+
+        response.headers[
+            "X-ScreenLink-Timestamp"
+        ] = result["timestamp"]
+
+        response.headers[
+            "X-ScreenLink-Filename"
+        ] = result["filename"]
+
+        return response
 
     except Exception as e:
 
@@ -427,7 +435,7 @@ def screenshot():
             "success": False,
 
             "message":
-            "Failed to send screenshot"
+                "Failed to send screenshot"
 
         }), 500
 

@@ -3,12 +3,23 @@ import time
 import traceback
 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_DIR = os.path.join(BASE_DIR, "logs")
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
 
-os.makedirs(LOG_DIR, exist_ok=True)
+LOG_DIR = os.path.join(
+    BASE_DIR,
+    "logs"
+)
 
-START_TIME = time.strftime("%Y%m%d_%H%M%S")
+os.makedirs(
+    LOG_DIR,
+    exist_ok=True
+)
+
+START_TIME = time.strftime(
+    "%Y%m%d_%H%M%S"
+) + f"_{int(time.time() * 1000) % 1000:03d}"
 
 LOG_FILE = os.path.join(
     LOG_DIR,
@@ -17,6 +28,7 @@ LOG_FILE = os.path.join(
 
 
 def log(message):
+
     timestamp = time.strftime(
         "[%Y-%m-%d %H:%M:%S]"
     )
@@ -26,11 +38,13 @@ def log(message):
     print(line)
 
     try:
+
         with open(
             LOG_FILE,
             "a",
             encoding="utf-8"
         ) as f:
+
             f.write(line + "\n")
 
     except Exception:
@@ -38,16 +52,22 @@ def log(message):
 
 
 def log_error(message):
-    log("ERROR: " + message)
+
+    log(
+        "ERROR: " + message
+    )
 
     try:
+
         with open(
             LOG_FILE,
             "a",
             encoding="utf-8"
         ) as f:
+
             f.write(
-                traceback.format_exc() + "\n"
+                traceback.format_exc()
+                + "\n"
             )
 
     except Exception:
@@ -55,4 +75,5 @@ def log_error(message):
 
 
 def get_log_file():
+
     return LOG_FILE

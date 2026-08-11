@@ -2,7 +2,7 @@ import os
 import time
 import mss
 
-from Laptop.logger import log, log_error
+from logger import log, log_error
 
 
 BASE_DIR = os.path.dirname(
@@ -24,7 +24,7 @@ def capture_screen():
 
     timestamp = time.strftime(
         "%Y%m%d_%H%M%S"
-    )
+    ) + f"_{int(time.time() * 1000) % 1000:03d}"
 
     filename = (
         f"{timestamp}.png"
@@ -56,10 +56,15 @@ def capture_screen():
         )
 
         log(
-            f"Screenshot size -> {size} bytes"
+            f"Screenshot size -> "
+            f"{size} bytes"
         )
 
-        return path
+        return {
+            "path": path,
+            "timestamp": timestamp,
+            "filename": filename
+        }
 
     except Exception as e:
 
