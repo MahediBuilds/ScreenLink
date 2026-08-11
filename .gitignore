@@ -8,5 +8,7 @@ __phone/logs/
 
 __pycache__/
 
-
 config/config.json
+
+__phone/__pycache__/
+__phone/logs/
