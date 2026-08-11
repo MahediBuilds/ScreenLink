@@ -34,10 +34,13 @@
             id="connectionStatus"
             class="connection-status connecting"
         >
+
             <span class="status-dot"></span>
+
             <span id="connectionText">
                 Connecting...
             </span>
+
         </div>
 
     </header>
@@ -71,11 +74,11 @@
             <div class="action-card">
 
                 <h2>
-                    Remote Control
+                    Screen
                 </h2>
 
                 <p class="section-description">
-                    Control your connected laptop from your phone.
+                    Capture the current laptop screen.
                 </p>
 
 
@@ -96,6 +99,45 @@
                     id="screenshotResult"
                     class="screenshot-result"
                 ></div>
+
+
+                <div
+                    id="aiSection"
+                    class="ai-section hidden"
+                >
+
+                    <h3>
+                        ChatGPT Click Instructions
+                    </h3>
+
+                    <p class="section-description">
+                        Attach the screenshot to ChatGPT and ask it to return the click JSON. Paste the JSON below.
+                    </p>
+
+
+                    <textarea
+                        id="clickJson"
+                        class="json-input"
+                        placeholder='Paste ChatGPT JSON here...'
+                        rows="9"
+                    ></textarea>
+
+
+                    <button
+                        id="executeClicksButton"
+                        class="primary-button"
+                        onclick="executeClicks()"
+                    >
+                        Execute Clicks
+                    </button>
+
+
+                    <p
+                        id="clickResult"
+                        class="result"
+                    ></p>
+
+                </div>
 
             </div>
 
@@ -127,6 +169,7 @@
                     >
                         Start Typing
                     </button>
+
 
                     <button
                         id="stopButton"

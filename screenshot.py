@@ -10,10 +10,12 @@ BASE_DIR = os.path.dirname(
     os.path.abspath(__file__)
 )
 
+
 SCREENSHOT_DIR = os.path.join(
     BASE_DIR,
     "screenshots"
 )
+
 
 os.makedirs(
     SCREENSHOT_DIR,
@@ -27,20 +29,26 @@ def capture_screen():
         "%Y%m%d_%H%M%S"
     ) + f"_{int(time.time() * 1000) % 1000:03d}"
 
+
     filename = (
         f"{timestamp}.png"
     )
+
 
     path = os.path.join(
         SCREENSHOT_DIR,
         filename
     )
 
+
     system = platform.system()
 
+
     log(
-        f"Operating system -> {system}"
+        f"Screenshot capture requested -> "
+        f"{system}"
     )
+
 
     try:
 
@@ -61,6 +69,7 @@ def capture_screen():
 
             return None
 
+
         if not os.path.exists(path):
 
             log_error(
@@ -69,7 +78,11 @@ def capture_screen():
 
             return None
 
-        size = os.path.getsize(path)
+
+        size = os.path.getsize(
+            path
+        )
+
 
         if size == 0:
 
@@ -79,6 +92,7 @@ def capture_screen():
 
             return None
 
+
         log(
             f"Screenshot saved -> {path}"
         )
@@ -87,12 +101,23 @@ def capture_screen():
             f"Screenshot size -> {size} bytes"
         )
 
+
         return {
-            "path": path,
-            "timestamp": timestamp,
-            "filename": filename,
-            "size": size
+
+            "path":
+                path,
+
+            "timestamp":
+                timestamp,
+
+            "filename":
+                filename,
+
+            "size":
+                size
+
         }
+
 
     except Exception as e:
 
@@ -107,18 +132,31 @@ def capture_screen():
 def capture_windows(path):
 
     log(
-        "Using Windows screenshot method"
+        "Using PyAutoGUI Windows screenshot"
     )
+
 
     try:
 
-        import mss
+        import pyautogui
 
-        with mss.mss() as sct:
 
-            sct.shot(
-                output=path
-            )
+        image = (
+            pyautogui.screenshot()
+        )
+
+
+        image.save(
+            path,
+            format="PNG"
+        )
+
+
+        log(
+            f"Screenshot resolution -> "
+            f"{image.width}x{image.height}"
+        )
+
 
     except Exception as e:
 
@@ -136,16 +174,23 @@ def capture_macos(path):
         "Using macOS screenshot method"
     )
 
+
     result = subprocess.run(
+
         [
             "screencapture",
             "-x",
             path
         ],
+
         capture_output=True,
+
         text=True,
+
         timeout=30
+
     )
+
 
     if result.returncode != 0:
 

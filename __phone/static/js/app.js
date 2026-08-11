@@ -17,12 +17,17 @@ async function loadPhoneInfo() {
                 }
             );
 
+
         const data =
             await response.json();
 
+
         if (!data.success) {
+
             return;
+
         }
+
 
     } catch (error) {
 
@@ -32,6 +37,7 @@ async function loadPhoneInfo() {
         );
 
     }
+
 }
 
 
@@ -47,6 +53,7 @@ async function loadDevice() {
                 }
             );
 
+
         if (!response.ok) {
 
             throw new Error(
@@ -55,17 +62,16 @@ async function loadDevice() {
 
         }
 
+
         const data =
             await response.json();
 
-        if (!data.success) {
 
-            setDisconnected();
-
-            return;
-        }
-
-        if (data.device && data.device.online) {
+        if (
+            data.device
+            &&
+            data.device.online
+        ) {
 
             setConnected();
 
@@ -75,6 +81,7 @@ async function loadDevice() {
 
         }
 
+
     } catch (error) {
 
         console.error(
@@ -82,17 +89,22 @@ async function loadDevice() {
             error
         );
 
+
         setDisconnected();
 
     }
+
 }
 
 
 function setConnected() {
 
     if (laptopOnline) {
+
         return;
+
     }
+
 
     laptopOnline = true;
 
@@ -102,20 +114,24 @@ function setConnected() {
             "connectingView"
         );
 
+
     const controlView =
         document.getElementById(
             "controlView"
         );
+
 
     const connectionStatus =
         document.getElementById(
             "connectionStatus"
         );
 
+
     const connectionText =
         document.getElementById(
             "connectionText"
         );
+
 
     const typeButton =
         document.getElementById(
@@ -126,6 +142,7 @@ function setConnected() {
     connectingView.classList.add(
         "hidden"
     );
+
 
     controlView.classList.remove(
         "hidden"
@@ -153,8 +170,11 @@ function setConnected() {
 function setDisconnected() {
 
     if (!laptopOnline) {
+
         return;
+
     }
+
 
     laptopOnline = false;
 
@@ -164,25 +184,30 @@ function setDisconnected() {
             "connectingView"
         );
 
+
     const controlView =
         document.getElementById(
             "controlView"
         );
+
 
     const connectionStatus =
         document.getElementById(
             "connectionStatus"
         );
 
+
     const connectionText =
         document.getElementById(
             "connectionText"
         );
 
+
     const typeButton =
         document.getElementById(
             "typeButton"
         );
+
 
     const stopButton =
         document.getElementById(
@@ -193,6 +218,7 @@ function setDisconnected() {
     connectingView.classList.remove(
         "hidden"
     );
+
 
     controlView.classList.add(
         "hidden"
@@ -209,6 +235,7 @@ function setDisconnected() {
 
     typeButton.disabled =
         true;
+
 
     stopButton.disabled =
         true;
@@ -229,9 +256,16 @@ async function takeScreenshot() {
             "screenshotButton"
         );
 
+
     const result =
         document.getElementById(
             "screenshotResult"
+        );
+
+
+    const aiSection =
+        document.getElementById(
+            "aiSection"
         );
 
 
@@ -255,13 +289,20 @@ async function takeScreenshot() {
     clearScreenshot();
 
 
+    aiSection.classList.add(
+        "hidden"
+    );
+
+
     const loading =
         document.createElement(
             "div"
         );
 
+
     loading.className =
         "screenshot-loading";
+
 
     loading.textContent =
         "Capturing screenshot...";
@@ -290,10 +331,12 @@ async function takeScreenshot() {
             let message =
                 "Screenshot capture failed.";
 
+
             try {
 
                 const data =
                     await response.json();
+
 
                 if (data.message) {
 
@@ -303,6 +346,7 @@ async function takeScreenshot() {
                 }
 
             } catch (error) {}
+
 
             throw new Error(
                 message
@@ -339,6 +383,7 @@ async function takeScreenshot() {
                 "div"
             );
 
+
         wrapper.className =
             "screenshot-wrapper";
 
@@ -348,11 +393,14 @@ async function takeScreenshot() {
                 "img"
             );
 
+
         image.className =
             "screenshot";
 
+
         image.alt =
             "Laptop screenshot";
+
 
         image.onload =
             function () {
@@ -364,6 +412,11 @@ async function takeScreenshot() {
                     loading.remove();
 
                 }
+
+
+                aiSection.classList.remove(
+                    "hidden"
+                );
 
             };
 
@@ -389,6 +442,7 @@ async function takeScreenshot() {
                         screenshotObjectUrl
                     );
 
+
                     screenshotObjectUrl =
                         null;
 
@@ -403,11 +457,14 @@ async function takeScreenshot() {
                         "div"
                     );
 
+
                 error.className =
                     "screenshot-error";
 
+
                 error.textContent =
                     "Unable to display the screenshot.";
+
 
                 result.appendChild(
                     error
@@ -430,12 +487,6 @@ async function takeScreenshot() {
         );
 
 
-        image.decode()
-            .catch(
-                function () {}
-            );
-
-
     } catch (error) {
 
         clearScreenshot();
@@ -446,8 +497,10 @@ async function takeScreenshot() {
                 "div"
             );
 
+
         errorElement.className =
             "screenshot-error";
+
 
         errorElement.textContent =
             error.message ||
@@ -457,6 +510,7 @@ async function takeScreenshot() {
         result.appendChild(
             errorElement
         );
+
 
     } finally {
 
@@ -470,6 +524,7 @@ async function takeScreenshot() {
             "Take Screenshot";
 
     }
+
 }
 
 
@@ -489,13 +544,248 @@ function clearScreenshot() {
             screenshotObjectUrl
         );
 
+
         screenshotObjectUrl =
             null;
 
     }
 
 
-    result.innerHTML = "";
+    result.innerHTML =
+        "";
+
+
+    const aiSection =
+        document.getElementById(
+            "aiSection"
+        );
+
+
+    if (aiSection) {
+
+        aiSection.classList.add(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+async function executeClicks() {
+
+    const input =
+        document.getElementById(
+            "clickJson"
+        );
+
+
+    const button =
+        document.getElementById(
+            "executeClicksButton"
+        );
+
+
+    const result =
+        document.getElementById(
+            "clickResult"
+        );
+
+
+    if (!laptopOnline) {
+
+        result.className =
+            "result error";
+
+
+        result.textContent =
+            "Laptop is not connected.";
+
+
+        return;
+
+    }
+
+
+    const raw =
+        input.value.trim();
+
+
+    if (!raw) {
+
+        result.className =
+            "result error";
+
+
+        result.textContent =
+            "Paste the ChatGPT JSON first.";
+
+
+        return;
+
+    }
+
+
+    let data;
+
+
+    try {
+
+        data =
+            JSON.parse(raw);
+
+
+    } catch (error) {
+
+        result.className =
+            "result error";
+
+
+        result.textContent =
+            "Invalid JSON. Copy the JSON from ChatGPT exactly.";
+
+
+        return;
+
+    }
+
+
+    if (
+        !data
+        ||
+        !Array.isArray(
+            data.steps
+        )
+    ) {
+
+        result.className =
+            "result error";
+
+
+        result.textContent =
+            "JSON must contain a steps array.";
+
+
+        return;
+
+    }
+
+
+    if (
+        data.steps.length === 0
+    ) {
+
+        result.className =
+            "result error";
+
+
+        result.textContent =
+            "No click steps were provided.";
+
+
+        return;
+
+    }
+
+
+    if (
+        data.steps.length > 6
+    ) {
+
+        result.className =
+            "result error";
+
+
+        result.textContent =
+            "Maximum 6 click steps are allowed.";
+
+
+        return;
+
+    }
+
+
+    button.disabled =
+        true;
+
+
+    result.className =
+        "result muted";
+
+
+    result.textContent =
+        "Executing clicks...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/click",
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify(
+                            data
+                        )
+
+                }
+            );
+
+
+        const responseData =
+            await response.json();
+
+
+        if (!responseData.success) {
+
+            throw new Error(
+
+                responseData.message
+                ||
+                "Click execution failed."
+
+            );
+
+        }
+
+
+        result.className =
+            "result success";
+
+
+        result.textContent =
+            `Executed ${responseData.executed || 0} click(s).`;
+
+
+    } catch (error) {
+
+        result.className =
+            "result error";
+
+
+        result.textContent =
+            error.message
+            ||
+            "Unable to execute clicks.";
+
+
+    } finally {
+
+        button.disabled =
+            false;
+
+    }
 
 }
 
@@ -507,15 +797,18 @@ async function sendTyping() {
             "typeText"
         ).value;
 
+
     const result =
         document.getElementById(
             "typeResult"
         );
 
+
     const typeButton =
         document.getElementById(
             "typeButton"
         );
+
 
     const stopButton =
         document.getElementById(
@@ -528,8 +821,10 @@ async function sendTyping() {
         result.className =
             "result error";
 
+
         result.textContent =
             "Enter some text first.";
+
 
         return;
 
@@ -541,8 +836,10 @@ async function sendTyping() {
         result.className =
             "result error";
 
+
         result.textContent =
             "Laptop is not connected.";
+
 
         return;
 
@@ -552,12 +849,14 @@ async function sendTyping() {
     result.className =
         "result muted";
 
+
     result.textContent =
         "Starting typing...";
 
 
     typeButton.disabled =
         true;
+
 
     stopButton.disabled =
         true;
@@ -569,16 +868,25 @@ async function sendTyping() {
             await fetch(
                 "/type",
                 {
-                    method: "POST",
+
+                    method:
+                        "POST",
 
                     headers: {
+
                         "Content-Type":
                             "application/json"
+
                     },
 
-                    body: JSON.stringify({
-                        text: text
+                    body:
+                        JSON.stringify({
+
+                            text:
+                                text
+
                     })
+
                 }
             );
 
@@ -590,8 +898,11 @@ async function sendTyping() {
         if (!data.success) {
 
             throw new Error(
-                data.message ||
+
+                data.message
+                ||
                 "Typing failed."
+
             );
 
         }
@@ -603,6 +914,7 @@ async function sendTyping() {
 
         result.className =
             "result success";
+
 
         result.textContent =
             "Typing started.";
@@ -617,8 +929,10 @@ async function sendTyping() {
         result.className =
             "result error";
 
+
         result.textContent =
-            error.message ||
+            error.message
+            ||
             "Unable to start typing.";
 
 
@@ -628,6 +942,7 @@ async function sendTyping() {
 
         typeButton.disabled =
             !laptopOnline;
+
 
         stopButton.disabled =
             true;
@@ -644,10 +959,12 @@ async function stopTyping() {
             "typeResult"
         );
 
+
     const typeButton =
         document.getElementById(
             "typeButton"
         );
+
 
     const stopButton =
         document.getElementById(
@@ -668,6 +985,7 @@ async function stopTyping() {
 
     result.className =
         "result muted";
+
 
     result.textContent =
         "Stopping typing...";
@@ -691,8 +1009,11 @@ async function stopTyping() {
         if (!data.success) {
 
             throw new Error(
-                data.message ||
+
+                data.message
+                ||
                 "Failed to stop typing."
+
             );
 
         }
@@ -705,12 +1026,14 @@ async function stopTyping() {
         result.className =
             "result success";
 
+
         result.textContent =
             "Typing stopped.";
 
 
         typeButton.disabled =
             !laptopOnline;
+
 
         stopButton.disabled =
             true;
@@ -721,8 +1044,10 @@ async function stopTyping() {
         result.className =
             "result error";
 
+
         result.textContent =
-            error.message ||
+            error.message
+            ||
             "Unable to stop typing.";
 
 
