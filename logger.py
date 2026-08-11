@@ -17,9 +17,11 @@ os.makedirs(
     exist_ok=True
 )
 
+
 START_TIME = time.strftime(
     "%Y%m%d_%H%M%S"
 ) + f"_{int(time.time() * 1000) % 1000:03d}"
+
 
 LOG_FILE = os.path.join(
     LOG_DIR,
@@ -35,8 +37,6 @@ def log(message):
 
     line = f"{timestamp} {message}"
 
-    print(line)
-
     try:
 
         with open(
@@ -45,7 +45,9 @@ def log(message):
             encoding="utf-8"
         ) as f:
 
-            f.write(line + "\n")
+            f.write(
+                line + "\n"
+            )
 
     except Exception:
         pass
@@ -72,6 +74,18 @@ def log_error(message):
 
     except Exception:
         pass
+
+
+def console(message):
+
+    print(message)
+
+
+def console_error(message):
+
+    print(
+        f"Error: {message}"
+    )
 
 
 def get_log_file():

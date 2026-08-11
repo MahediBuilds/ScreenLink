@@ -1,13 +1,17 @@
 import socket
 import threading
 import time
-import sys
 
 import requests
 from flask import Flask, jsonify, send_file, request
 
 from config import load_config, save_config
-from logger import log, log_error, get_log_file
+from logger import (
+    log,
+    log_error,
+    console,
+    console_error
+)
 from typer import type_text, stop_typing
 from network import get_local_ip
 from screenshot import capture_screen
@@ -15,10 +19,15 @@ from screenshot import capture_screen
 
 app = Flask(__name__)
 
+
 config = load_config()
 
+
 PHONE_IP = config["phone_ip"]
-PHONE_PORT = int(config["phone_port"])
+
+PHONE_PORT = int(
+    config["phone_port"]
+)
 
 LAPTOP_PORT = int(
     config["laptop_port"]
@@ -32,10 +41,14 @@ RETRY_INTERVAL = int(
     config["connection_retry_interval"]
 )
 
+
 DEVICE_NAME = socket.gethostname()
 
+
 running = True
+
 registered = False
+
 typing_thread = None
 
 
@@ -55,7 +68,7 @@ def check_phone():
     )
 
     log(
-        f"Checking ScreenLink phone -> {url}"
+        f"Checking phone server -> {url}"
     )
 
     try:
@@ -65,6 +78,11 @@ def check_phone():
             timeout=5
         )
 
+        log(
+            f"Phone status response -> "
+            f"{response.status_code}"
+        )
+
         if response.status_code == 200:
 
             data = response.json()
@@ -72,14 +90,14 @@ def check_phone():
             if data.get("success"):
 
                 log(
-                    "ScreenLink phone server found"
+                    "Phone server is available"
                 )
 
                 return True
 
         log(
-            "Phone responded, but is not "
-            "a valid ScreenLink server"
+            "Phone responded but did not "
+            "identify as a ScreenLink server"
         )
 
         return False
@@ -102,29 +120,30 @@ def ask_for_phone_ip():
 
     if PHONE_IP:
 
-        print(
-            f"Last used phone IP: "
-            f"{PHONE_IP}"
-        )
-
         answer = input(
-            "Use this IP? [Y/n]: "
-        ).strip().lower()
+            f"Phone IP [{PHONE_IP}]: "
+        ).strip()
 
-        if answer in ("", "y", "yes"):
+        if answer:
 
-            return
+            PHONE_IP = answer
+
+            config["phone_ip"] = PHONE_IP
+
+            save_config(config)
+
+        return
 
     while True:
 
         ip = input(
-            "Enter the IP address of the phone: "
+            "Phone IP: "
         ).strip()
 
         if not ip:
 
-            print(
-                "IP address cannot be empty."
+            console_error(
+                "Phone IP cannot be empty."
             )
 
             continue
@@ -134,10 +153,6 @@ def ask_for_phone_ip():
         config["phone_ip"] = PHONE_IP
 
         save_config(config)
-
-        print(
-            f"Phone IP saved -> {PHONE_IP}"
-        )
 
         return
 
@@ -160,15 +175,15 @@ def register():
     }
 
     log(
-        "Registration attempt"
+        "Registration attempt started"
     )
 
     log(
-        f"Phone -> {url}"
+        f"Registration URL -> {url}"
     )
 
     log(
-        f"Device -> {DEVICE_NAME}"
+        f"Device name -> {DEVICE_NAME}"
     )
 
     log(
@@ -198,6 +213,10 @@ def register():
 
             log(
                 "Registration successful"
+            )
+
+            console(
+                "Laptop connected"
             )
 
             return True
@@ -247,12 +266,21 @@ def heartbeat():
             timeout=5
         )
 
+        log(
+            f"Heartbeat response -> "
+            f"{response.status_code}"
+        )
+
         if response.status_code == 200:
 
             if not registered:
 
                 log(
-                    "Heartbeat successful"
+                    "Heartbeat restored registration"
+                )
+
+                console(
+                    "Laptop connected"
                 )
 
             registered = True
@@ -264,8 +292,7 @@ def heartbeat():
             registered = False
 
             log(
-                "Laptop is not registered "
-                "with phone"
+                "Laptop is no longer registered"
             )
 
             return False
@@ -284,8 +311,7 @@ def heartbeat():
         registered = False
 
         log(
-            "Phone unavailable during "
-            "heartbeat -> "
+            "Heartbeat connection failed -> "
             + str(e)
         )
 
@@ -314,14 +340,18 @@ def heartbeat_loop():
 
                 log(
                     "Heartbeat lost. "
-                    "Waiting for phone..."
+                    "Waiting for phone."
+                )
+
+                console(
+                    "Laptop disconnected"
                 )
 
         else:
 
             log(
                 "Attempting to reconnect "
-                "to phone..."
+                "to phone"
             )
 
             if check_phone():
@@ -367,10 +397,6 @@ def type_endpoint():
     global typing_thread
 
     log(
-        "========================================"
-    )
-
-    log(
         "Typing request received"
     )
 
@@ -380,6 +406,11 @@ def type_endpoint():
             typing_thread is not None
             and typing_thread.is_alive()
         ):
+
+            log(
+                "Typing request rejected because "
+                "typing is already active"
+            )
 
             return jsonify({
 
@@ -428,7 +459,7 @@ def type_endpoint():
             }), 400
 
         log(
-            f"Text length -> {len(text)}"
+            f"Typing text length -> {len(text)}"
         )
 
         typing_thread = threading.Thread(
@@ -444,6 +475,10 @@ def type_endpoint():
         typing_thread.start()
 
         log(
+            "Typing started"
+        )
+
+        console(
             "Typing started"
         )
 
@@ -467,7 +502,8 @@ def type_endpoint():
 
             "success": False,
 
-            "message": str(e)
+            "message":
+                "Unable to start typing"
 
         }), 500
 
@@ -490,6 +526,10 @@ def stop_type_endpoint():
             "Typing stop signal sent"
         )
 
+        console(
+            "Typing stopped"
+        )
+
         return jsonify({
 
             "success": True,
@@ -510,7 +550,8 @@ def stop_type_endpoint():
 
             "success": False,
 
-            "message": str(e)
+            "message":
+                "Unable to stop typing"
 
         }), 500
 
@@ -521,20 +562,8 @@ def stop_type_endpoint():
 )
 def screenshot():
 
-    request_time = time.strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
-
-    log(
-        "========================================"
-    )
-
     log(
         "Screenshot request received"
-    )
-
-    log(
-        f"Request time -> {request_time}"
     )
 
     result = capture_screen()
@@ -542,7 +571,7 @@ def screenshot():
     if not result:
 
         log(
-            "Screenshot request failed"
+            "Screenshot capture failed"
         )
 
         return jsonify({
@@ -557,7 +586,8 @@ def screenshot():
     try:
 
         log(
-            "Sending screenshot to phone"
+            f"Sending screenshot -> "
+            f"{result['filename']}"
         )
 
         response = send_file(
@@ -569,6 +599,7 @@ def screenshot():
             as_attachment=False,
 
             download_name=result["filename"]
+
         )
 
         response.headers[
@@ -578,6 +609,10 @@ def screenshot():
         response.headers[
             "X-ScreenLink-Filename"
         ] = result["filename"]
+
+        console(
+            "Screenshot captured"
+        )
 
         return response
 
@@ -593,7 +628,7 @@ def screenshot():
             "success": False,
 
             "message":
-                "Failed to send screenshot"
+                "Unable to send screenshot"
 
         }), 500
 
@@ -601,7 +636,7 @@ def screenshot():
 def start_server():
 
     log(
-        f"Starting laptop HTTP server "
+        f"Laptop HTTP server starting "
         f"on port {LAPTOP_PORT}"
     )
 
@@ -613,7 +648,9 @@ def start_server():
 
         debug=False,
 
-        use_reloader=False
+        use_reloader=False,
+
+        threaded=True
 
     )
 
@@ -636,35 +673,18 @@ def main():
     global PHONE_IP
 
     print()
-    print("=" * 45)
-    print("       SCREENLINK LAPTOP")
-    print("=" * 45)
-
     print(
-        f"Device         : {DEVICE_NAME}"
+        "ScreenLink Laptop"
     )
-
-    print(
-        f"Laptop IP      : {get_local_ip()}"
-    )
-
-    print(
-        f"Laptop Port    : {LAPTOP_PORT}"
-    )
-
     print()
 
     ask_for_phone_ip()
 
-    print(
-        f"Phone IP       : {PHONE_IP}"
-    )
-
-    print(
-        f"Phone Port     : {PHONE_PORT}"
-    )
-
     print()
+
+    console(
+        f"Phone IP: {PHONE_IP}"
+    )
 
     log(
         "========================================"
@@ -694,29 +714,14 @@ def main():
         f"Phone port -> {PHONE_PORT}"
     )
 
-    log(
-        f"Log file -> {get_log_file()}"
-    )
-
-    print()
-
     while True:
-
-        print(
-            "Checking ScreenLink phone..."
-        )
 
         if check_phone():
 
-            print(
-                "Phone found."
-            )
-
             break
 
-        print(
-            f"Phone unavailable. "
-            f"Retrying in {RETRY_INTERVAL} seconds..."
+        console(
+            "Waiting for phone..."
         )
 
         time.sleep(
@@ -725,9 +730,8 @@ def main():
 
     while not register():
 
-        print(
-            f"Registration failed. "
-            f"Retrying in {RETRY_INTERVAL} seconds..."
+        console(
+            "Unable to connect to phone. Retrying..."
         )
 
         time.sleep(
@@ -744,13 +748,6 @@ def main():
 
     heartbeat_thread.start()
 
-    print()
-    print("=" * 45)
-    print("Registration successful.")
-    print("Status         : ONLINE")
-    print("=" * 45)
-    print()
-
     try:
 
         start_server()
@@ -758,8 +755,9 @@ def main():
     except KeyboardInterrupt:
 
         print()
-        print(
-            "Stopping ScreenLink..."
+
+        console(
+            "ScreenLink stopped"
         )
 
         shutdown()
@@ -769,6 +767,10 @@ def main():
         log_error(
             "Server crashed: "
             + str(e)
+        )
+
+        console_error(
+            "Laptop server stopped unexpectedly."
         )
 
         shutdown()

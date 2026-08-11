@@ -7,19 +7,23 @@ BASE_DIR = os.path.dirname(
     os.path.abspath(__file__)
 )
 
+
 LOG_DIR = os.path.join(
     BASE_DIR,
     "logs"
 )
+
 
 os.makedirs(
     LOG_DIR,
     exist_ok=True
 )
 
+
 START_TIME = time.strftime(
     "%Y%m%d_%H%M%S"
 ) + f"_{int(time.time() * 1000) % 1000:03d}"
+
 
 LOG_FILE = os.path.join(
     LOG_DIR,
@@ -34,8 +38,6 @@ def log(message):
     )
 
     line = f"{timestamp} {message}"
-
-    print(line)
 
     try:
 
@@ -74,6 +76,18 @@ def log_error(message):
 
     except Exception:
         pass
+
+
+def console(message):
+
+    print(message)
+
+
+def console_error(message):
+
+    print(
+        f"Error: {message}"
+    )
 
 
 def get_log_file():
