@@ -5,3 +5,8 @@ Laptop/screenshots/
 Laptop/logs/
 
 phone/logs/
+
+__pycache__/
+
+
+Laptop/config/config.json
