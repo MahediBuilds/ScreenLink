@@ -1,0 +1,71 @@
+import os
+import time
+import mss
+
+from Laptop.logger import log, log_error
+
+
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
+
+SCREENSHOT_DIR = os.path.join(
+    BASE_DIR,
+    "screenshots"
+)
+
+os.makedirs(
+    SCREENSHOT_DIR,
+    exist_ok=True
+)
+
+
+def capture_screen():
+
+    timestamp = time.strftime(
+        "%Y%m%d_%H%M%S"
+    )
+
+    filename = (
+        f"{timestamp}.png"
+    )
+
+    path = os.path.join(
+        SCREENSHOT_DIR,
+        filename
+    )
+
+    try:
+
+        log(
+            "Capturing screenshot..."
+        )
+
+        with mss.mss() as sct:
+
+            sct.shot(
+                output=path
+            )
+
+        size = os.path.getsize(
+            path
+        )
+
+        log(
+            f"Screenshot saved -> {path}"
+        )
+
+        log(
+            f"Screenshot size -> {size} bytes"
+        )
+
+        return path
+
+    except Exception as e:
+
+        log_error(
+            "Screenshot failed: "
+            + str(e)
+        )
+
+        return None

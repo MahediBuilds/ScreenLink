@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>ScreenLink</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+
+        <h1>ScreenLink</h1>
+
+        <p id="phoneInfo">
+            Loading phone information...
+        </p>
+
+    </header>
+
+
+    <section>
+
+        <div class="section-header">
+
+            <h2>Available Laptops</h2>
+
+            <button
+                id="refreshButton"
+                onclick="loadDevices()"
+            >
+                Refresh
+            </button>
+
+        </div>
+
+        <div id="devices">
+
+            <p class="muted">
+                Loading...
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <section>
+
+        <h2>Manual Connection</h2>
+
+        <p class="muted">
+            Enter a laptop IP address to connect manually.
+        </p>
+
+        <div class="manual-form">
+
+            <input
+                type="text"
+                id="manualIp"
+                placeholder="Laptop IP address"
+                autocomplete="off"
+            >
+
+            <input
+                type="number"
+                id="manualPort"
+                value="5001"
+                placeholder="Port"
+            >
+
+            <button
+                onclick="manualConnect()"
+            >
+                Connect
+            </button>
+
+        </div>
+
+        <p id="manualResult"></p>
+
+    </section>
+
+</div>
+
+
+<script
+    src="{{ url_for('static', filename='js/app.js') }}"
+></script>
+
+</body>
+
+</html>

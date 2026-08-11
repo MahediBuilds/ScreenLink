@@ -1,0 +1,135 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+
+    font-family: Arial, sans-serif;
+
+    background: #111;
+    color: #fff;
+}
+
+.container {
+    max-width: 700px;
+    margin: auto;
+}
+
+header {
+    margin-bottom: 30px;
+}
+
+h1 {
+    margin-bottom: 5px;
+}
+
+h2 {
+    margin-top: 0;
+}
+
+section {
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.device {
+    background: #222;
+
+    padding: 20px;
+
+    margin-bottom: 15px;
+
+    border-radius: 12px;
+}
+
+.device-name {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.device-ip {
+    margin-top: 6px;
+    color: #aaa;
+}
+
+.status {
+    margin-top: 8px;
+    font-weight: bold;
+}
+
+.online {
+    color: #4caf50;
+}
+
+.offline {
+    color: #f44336;
+}
+
+button {
+    border: none;
+
+    padding: 11px 16px;
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    color: #111;
+
+    font-size: 14px;
+
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: 0.5;
+}
+
+.capture-button {
+    margin-top: 15px;
+}
+
+input {
+    width: 100%;
+
+    padding: 12px;
+
+    margin-bottom: 10px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    font-size: 15px;
+}
+
+.manual-form {
+    max-width: 400px;
+}
+
+.screenshot {
+    width: 100%;
+
+    margin-top: 15px;
+
+    border-radius: 8px;
+}
+
+.muted {
+    color: #888;
+}
+
+.success {
+    color: #4caf50;
+}
+
+.error {
+    color: #f44336;
+}
