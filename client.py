@@ -120,24 +120,23 @@ def ask_for_phone_ip():
 
     if PHONE_IP:
 
+        print(
+            f"Last used phone IP: "
+            f"{PHONE_IP}"
+        )
+
         answer = input(
-            f"Phone IP [{PHONE_IP}]: "
-        ).strip()
+            "Use this IP? [Y/n]: "
+        ).strip().lower()
 
-        if answer:
+        if answer in ("", "y", "yes"):
 
-            PHONE_IP = answer
-
-            config["phone_ip"] = PHONE_IP
-
-            save_config(config)
-
-        return
+            return
 
     while True:
 
         ip = input(
-            "Phone IP: "
+            "Enter the IP address of the phone: "
         ).strip()
 
         if not ip:
@@ -153,6 +152,10 @@ def ask_for_phone_ip():
         config["phone_ip"] = PHONE_IP
 
         save_config(config)
+
+        print(
+            f"Phone IP saved -> {PHONE_IP}"
+        )
 
         return
 
@@ -673,18 +676,35 @@ def main():
     global PHONE_IP
 
     print()
+    print("=" * 45)
+    print("       SCREENLINK LAPTOP")
+    print("=" * 45)
+
     print(
-        "ScreenLink Laptop"
+        f"Device         : {DEVICE_NAME}"
     )
+
+    print(
+        f"Laptop IP      : {get_local_ip()}"
+    )
+
+    print(
+        f"Laptop Port    : {LAPTOP_PORT}"
+    )
+
     print()
 
     ask_for_phone_ip()
 
-    print()
-
-    console(
-        f"Phone IP: {PHONE_IP}"
+    print(
+        f"Phone IP       : {PHONE_IP}"
     )
+
+    print(
+        f"Phone Port     : {PHONE_PORT}"
+    )
+
+    print()
 
     log(
         "========================================"
@@ -716,12 +736,21 @@ def main():
 
     while True:
 
+        print(
+            "Checking ScreenLink phone..."
+        )
+
         if check_phone():
+
+            print(
+                "Phone found."
+            )
 
             break
 
-        console(
-            "Waiting for phone..."
+        print(
+            f"Phone unavailable. "
+            f"Retrying in {RETRY_INTERVAL} seconds..."
         )
 
         time.sleep(
@@ -730,8 +759,9 @@ def main():
 
     while not register():
 
-        console(
-            "Unable to connect to phone. Retrying..."
+        print(
+            f"Registration failed. "
+            f"Retrying in {RETRY_INTERVAL} seconds..."
         )
 
         time.sleep(
@@ -748,6 +778,13 @@ def main():
 
     heartbeat_thread.start()
 
+    print()
+    print("=" * 45)
+    print("Registration successful.")
+    print("Status         : ONLINE")
+    print("=" * 45)
+    print()
+
     try:
 
         start_server()
@@ -757,7 +794,7 @@ def main():
         print()
 
         console(
-            "ScreenLink stopped"
+            "Stopping ScreenLink..."
         )
 
         shutdown()
