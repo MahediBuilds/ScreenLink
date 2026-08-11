@@ -1,6 +1,5 @@
 import os
 import subprocess
-import time
 
 import requests
 
@@ -9,11 +8,7 @@ from logger import log, log_error
 
 class ScreenshotManager:
 
-    def __init__(
-        self,
-        screenshot_directory
-    ):
-
+    def __init__(self, screenshot_directory):
         self.directory = os.path.expanduser(
             screenshot_directory
         )
@@ -23,11 +18,7 @@ class ScreenshotManager:
             exist_ok=True
         )
 
-    def capture(
-        self,
-        device
-    ):
-
+    def capture(self, device):
         ip = device["ip"]
         port = device["port"]
 
@@ -42,7 +33,6 @@ class ScreenshotManager:
         )
 
         try:
-
             response = requests.get(
                 url,
                 timeout=30
@@ -54,7 +44,6 @@ class ScreenshotManager:
             )
 
             if response.status_code != 200:
-
                 log(
                     "Laptop failed to capture "
                     "screenshot"
@@ -62,25 +51,39 @@ class ScreenshotManager:
 
                 return None
 
-            timestamp = time.strftime(
-                "%Y%m%d_%H%M%S"
+            timestamp = response.headers.get(
+                "X-ScreenLink-Timestamp"
             )
 
-            filename = (
-                f"{device['name']}_"
-                f"{timestamp}.png"
+            filename = response.headers.get(
+                "X-ScreenLink-Filename"
             )
+
+            if not timestamp:
+                log(
+                    "Laptop did not provide "
+                    "screenshot timestamp"
+                )
+
+                return None
+
+            if not filename:
+                filename = (
+                    f"{device['name']}_"
+                    f"{timestamp}.png"
+                )
+            else:
+                filename = (
+                    f"{device['name']}_"
+                    f"{filename}"
+                )
 
             path = os.path.join(
                 self.directory,
                 filename
             )
 
-            with open(
-                path,
-                "wb"
-            ) as f:
-
+            with open(path, "wb") as f:
                 f.write(
                     response.content
                 )
@@ -90,7 +93,13 @@ class ScreenshotManager:
             )
 
             log(
-                f"Screenshot saved -> {path}"
+                f"Screenshot timestamp -> "
+                f"{timestamp}"
+            )
+
+            log(
+                f"Screenshot saved -> "
+                f"{path}"
             )
 
             log(
@@ -101,19 +110,14 @@ class ScreenshotManager:
             self.scan_media(path)
 
             return {
-
                 "filename": filename,
-
                 "path": path,
-
+                "timestamp": timestamp,
                 "size": size,
-
-                "data":
-                    response.content
+                "data": response.content
             }
 
         except Exception as e:
-
             log_error(
                 "Screenshot request failed: "
                 + str(e)
@@ -121,13 +125,8 @@ class ScreenshotManager:
 
             return None
 
-    def scan_media(
-        self,
-        path
-    ):
-
+    def scan_media(self, path):
         try:
-
             subprocess.run(
                 [
                     "termux-media-scan",
@@ -142,7 +141,6 @@ class ScreenshotManager:
             )
 
         except Exception as e:
-
             log(
                 "Media scan failed -> "
                 + str(e)

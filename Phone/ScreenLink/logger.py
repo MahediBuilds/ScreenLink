@@ -2,6 +2,7 @@ import os
 import time
 import traceback
 
+
 BASE_DIR = os.path.dirname(
     os.path.abspath(__file__)
 )
@@ -18,7 +19,7 @@ os.makedirs(
 
 START_TIME = time.strftime(
     "%Y%m%d_%H%M%S"
-)
+) + f"_{int(time.time() * 1000) % 1000:03d}"
 
 LOG_FILE = os.path.join(
     LOG_DIR,
