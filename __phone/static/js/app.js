@@ -1,5 +1,9 @@
+```javascript
 let laptopOnline = false;
+
 let activeTyping = false;
+
+let screenshotObjectUrl = null;
 
 
 async function loadPhoneInfo() {
@@ -7,26 +11,26 @@ async function loadPhoneInfo() {
     try {
 
         const response =
-            await fetch("/status");
+            await fetch(
+                "/status",
+                {
+                    cache: "no-store"
+                }
+            );
 
         const data =
             await response.json();
 
-        if (data.success) {
-
-            document.getElementById(
-                "phoneInfo"
-            ).textContent =
-                `Phone: ${data.ip}:${data.port}`;
-
+        if (!data.success) {
+            return;
         }
 
     } catch (error) {
 
-        document.getElementById(
-            "phoneInfo"
-        ).textContent =
-            "Phone server information unavailable.";
+        console.error(
+            "Phone status error:",
+            error
+        );
 
     }
 }
@@ -37,41 +41,143 @@ async function loadDevice() {
     try {
 
         const response =
-            await fetch("/device");
+            await fetch(
+                "/device",
+                {
+                    cache: "no-store"
+                }
+            );
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Server returned an error."
+            );
+
+        }
 
         const data =
             await response.json();
 
         if (!data.success) {
 
-            showDeviceMessage(
-                "Unable to load laptop status.",
-                "error"
-            );
+            setDisconnected();
 
             return;
         }
 
-        updateDevice(
-            data.device
-        );
+        if (data.device && data.device.online) {
+
+            setConnected();
+
+        } else {
+
+            setDisconnected();
+
+        }
 
     } catch (error) {
 
-        showDeviceMessage(
-            "Unable to contact server.",
-            "error"
+        console.error(
+            "Device status error:",
+            error
         );
+
+        setDisconnected();
 
     }
 }
 
 
-function updateDevice(device) {
+function setConnected() {
 
-    const container =
+    if (laptopOnline) {
+        return;
+    }
+
+    laptopOnline = true;
+
+
+    const connectingView =
         document.getElementById(
-            "device"
+            "connectingView"
+        );
+
+    const controlView =
+        document.getElementById(
+            "controlView"
+        );
+
+    const connectionStatus =
+        document.getElementById(
+            "connectionStatus"
+        );
+
+    const connectionText =
+        document.getElementById(
+            "connectionText"
+        );
+
+    const typeButton =
+        document.getElementById(
+            "typeButton"
+        );
+
+
+    connectingView.classList.add(
+        "hidden"
+    );
+
+    controlView.classList.remove(
+        "hidden"
+    );
+
+
+    connectionStatus.className =
+        "connection-status connected";
+
+
+    connectionText.textContent =
+        "Connected";
+
+
+    if (!activeTyping) {
+
+        typeButton.disabled =
+            false;
+
+    }
+
+}
+
+
+function setDisconnected() {
+
+    if (!laptopOnline) {
+        return;
+    }
+
+    laptopOnline = false;
+
+
+    const connectingView =
+        document.getElementById(
+            "connectingView"
+        );
+
+    const controlView =
+        document.getElementById(
+            "controlView"
+        );
+
+    const connectionStatus =
+        document.getElementById(
+            "connectionStatus"
+        );
+
+    const connectionText =
+        document.getElementById(
+            "connectionText"
         );
 
     const typeButton =
@@ -85,150 +191,105 @@ function updateDevice(device) {
         );
 
 
-    if (!device) {
+    connectingView.classList.remove(
+        "hidden"
+    );
 
-        laptopOnline = false;
-
-        container.innerHTML = `
-
-            <p class="muted">
-                Waiting for laptop registration...
-            </p>
-
-        `;
-
-        typeButton.disabled = true;
-
-        if (!activeTyping) {
-            stopButton.disabled = true;
-        }
-
-        return;
-    }
+    controlView.classList.add(
+        "hidden"
+    );
 
 
-    laptopOnline =
-        device.online;
+    connectionStatus.className =
+        "connection-status connecting";
 
 
-    if (device.online) {
-
-        container.innerHTML = `
-
-            <div class="device">
-
-                <div class="device-name">
-                    ${escapeHtml(device.name)}
-                </div>
-
-                <div class="device-ip">
-                    ${escapeHtml(device.ip)}:${device.port}
-                </div>
-
-                <div class="status online">
-                    ONLINE
-                </div>
-
-                <div class="device-controls">
-
-                    <button
-                        class="capture-button"
-                        onclick="takeScreenshot()"
-                    >
-                        Take Screenshot
-                    </button>
-
-                </div>
-
-                <div
-                    id="screenshot-container"
-                    class="screenshot-container"
-                ></div>
-
-            </div>
-
-        `;
-
-        if (!activeTyping) {
-            typeButton.disabled = false;
-        }
-
-    } else {
-
-        container.innerHTML = `
-
-            <div class="device">
-
-                <div class="device-name">
-                    ${escapeHtml(device.name)}
-                </div>
-
-                <div class="device-ip">
-                    ${escapeHtml(device.ip)}:${device.port}
-                </div>
-
-                <div class="status offline">
-                    OFFLINE
-                </div>
-
-            </div>
-
-        `;
-
-        laptopOnline = false;
-
-        typeButton.disabled = true;
-
-        if (!activeTyping) {
-            stopButton.disabled = true;
-        }
-    }
-}
+    connectionText.textContent =
+        "Connecting...";
 
 
-function showDeviceMessage(
-    message,
-    className
-) {
+    typeButton.disabled =
+        true;
 
-    const container =
-        document.getElementById(
-            "device"
-        );
+    stopButton.disabled =
+        true;
 
-    container.innerHTML =
-        `<p class="${className}">
-            ${escapeHtml(message)}
-        </p>`;
+
+    activeTyping = false;
+
+
+    clearScreenshot();
 
 }
 
 
 async function takeScreenshot() {
 
-    const container =
+    const button =
         document.getElementById(
-            "screenshot-container"
+            "screenshotButton"
         );
 
-    if (!container) {
+    const result =
+        document.getElementById(
+            "screenshotResult"
+        );
+
+
+    if (!laptopOnline) {
+
         return;
+
     }
 
-    container.innerHTML =
-        '<p class="muted">Capturing screenshot...</p>';
+
+    button.disabled =
+        true;
+
+
+    button.querySelector(
+        "span"
+    ).textContent =
+        "Capturing...";
+
+
+    clearScreenshot();
+
+
+    const loading =
+        document.createElement(
+            "div"
+        );
+
+    loading.className =
+        "screenshot-loading";
+
+    loading.textContent =
+        "Capturing screenshot...";
+
+
+    result.appendChild(
+        loading
+    );
+
 
     try {
 
         const response =
             await fetch(
-                "/screenshot"
+                "/screenshot",
+                {
+                    method: "GET",
+
+                    cache: "no-store"
+                }
             );
+
 
         if (!response.ok) {
 
             let message =
-                "Screenshot failed.";
+                "Screenshot capture failed.";
 
             try {
 
@@ -242,42 +303,201 @@ async function takeScreenshot() {
 
                 }
 
-            } catch {}
+            } catch (error) {}
 
             throw new Error(
                 message
             );
+
         }
+
 
         const blob =
             await response.blob();
 
-        const url =
+
+        if (!blob.size) {
+
+            throw new Error(
+                "Laptop returned an empty screenshot."
+            );
+
+        }
+
+
+        const imageUrl =
             URL.createObjectURL(
                 blob
             );
 
-        container.innerHTML = `
 
-            <img
-                class="screenshot"
-                src="${url}"
-                alt="Laptop screenshot"
-            >
+        screenshotObjectUrl =
+            imageUrl;
 
-        `;
+
+        const wrapper =
+            document.createElement(
+                "div"
+            );
+
+        wrapper.className =
+            "screenshot-wrapper";
+
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+        image.className =
+            "screenshot";
+
+        image.alt =
+            "Laptop screenshot";
+
+        image.onload =
+            function () {
+
+                if (
+                    loading.parentNode
+                ) {
+
+                    loading.remove();
+
+                }
+
+            };
+
+
+        image.onerror =
+            function () {
+
+                if (
+                    loading.parentNode
+                ) {
+
+                    loading.remove();
+
+                }
+
+
+                if (
+                    screenshotObjectUrl
+                    === imageUrl
+                ) {
+
+                    URL.revokeObjectURL(
+                        screenshotObjectUrl
+                    );
+
+                    screenshotObjectUrl =
+                        null;
+
+                }
+
+
+                wrapper.remove();
+
+
+                const error =
+                    document.createElement(
+                        "div"
+                    );
+
+                error.className =
+                    "screenshot-error";
+
+                error.textContent =
+                    "Unable to display the screenshot.";
+
+                result.appendChild(
+                    error
+                );
+
+            };
+
+
+        image.src =
+            imageUrl;
+
+
+        wrapper.appendChild(
+            image
+        );
+
+
+        result.appendChild(
+            wrapper
+        );
+
+
+        image.decode()
+            .catch(
+                function () {}
+            );
+
 
     } catch (error) {
 
-        container.innerHTML = `
+        clearScreenshot();
 
-            <p class="error">
-                ${escapeHtml(error.message)}
-            </p>
 
-        `;
+        const errorElement =
+            document.createElement(
+                "div"
+            );
+
+        errorElement.className =
+            "screenshot-error";
+
+        errorElement.textContent =
+            error.message ||
+            "Screenshot capture failed.";
+
+
+        result.appendChild(
+            errorElement
+        );
+
+    } finally {
+
+        button.disabled =
+            !laptopOnline;
+
+
+        button.querySelector(
+            "span"
+        ).textContent =
+            "Take Screenshot";
 
     }
+}
+
+
+function clearScreenshot() {
+
+    const result =
+        document.getElementById(
+            "screenshotResult"
+        );
+
+
+    if (
+        screenshotObjectUrl
+    ) {
+
+        URL.revokeObjectURL(
+            screenshotObjectUrl
+        );
+
+        screenshotObjectUrl =
+            null;
+
+    }
+
+
+    result.innerHTML = "";
+
 }
 
 
@@ -307,37 +527,41 @@ async function sendTyping() {
     if (!text.trim()) {
 
         result.className =
-            "error";
+            "result error";
 
         result.textContent =
             "Enter some text first.";
 
         return;
+
     }
 
 
     if (!laptopOnline) {
 
         result.className =
-            "error";
+            "result error";
 
         result.textContent =
-            "Laptop is offline.";
+            "Laptop is not connected.";
 
         return;
+
     }
 
 
     result.className =
-        "muted";
+        "result muted";
 
     result.textContent =
         "Starting typing...";
 
 
-    typeButton.disabled = true;
+    typeButton.disabled =
+        true;
 
-    stopButton.disabled = true;
+    stopButton.disabled =
+        true;
 
 
     try {
@@ -374,25 +598,34 @@ async function sendTyping() {
         }
 
 
-        activeTyping = true;
+        activeTyping =
+            true;
+
 
         result.className =
-            "success";
+            "result success";
 
         result.textContent =
             "Typing started.";
 
-        stopButton.disabled = false;
+
+        stopButton.disabled =
+            false;
 
 
     } catch (error) {
 
         result.className =
-            "error";
+            "result error";
 
         result.textContent =
             error.message ||
             "Unable to start typing.";
+
+
+        activeTyping =
+            false;
+
 
         typeButton.disabled =
             !laptopOnline;
@@ -401,6 +634,7 @@ async function sendTyping() {
             true;
 
     }
+
 }
 
 
@@ -424,20 +658,17 @@ async function stopTyping() {
 
     if (!activeTyping) {
 
-        result.className =
-            "error";
-
-        result.textContent =
-            "No typing operation is active.";
-
         return;
+
     }
 
 
-    stopButton.disabled = true;
+    stopButton.disabled =
+        true;
+
 
     result.className =
-        "muted";
+        "result muted";
 
     result.textContent =
         "Stopping typing...";
@@ -468,13 +699,16 @@ async function stopTyping() {
         }
 
 
-        activeTyping = false;
+        activeTyping =
+            false;
+
 
         result.className =
-            "success";
+            "result success";
 
         result.textContent =
             "Typing stopped.";
+
 
         typeButton.disabled =
             !laptopOnline;
@@ -486,42 +720,18 @@ async function stopTyping() {
     } catch (error) {
 
         result.className =
-            "error";
+            "result error";
 
         result.textContent =
             error.message ||
             "Unable to stop typing.";
 
+
         stopButton.disabled =
             false;
 
     }
-}
 
-
-function escapeHtml(value) {
-
-    return String(value)
-        .replaceAll(
-            "&",
-            "&amp;"
-        )
-        .replaceAll(
-            "<",
-            "&lt;"
-        )
-        .replaceAll(
-            ">",
-            "&gt;"
-        )
-        .replaceAll(
-            '"',
-            "&quot;"
-        )
-        .replaceAll(
-            "'",
-            "&#039;"
-        );
 }
 
 
@@ -532,5 +742,6 @@ loadDevice();
 
 setInterval(
     loadDevice,
-    5000
+    3000
 );
+```

@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 
 <html>
@@ -22,71 +23,134 @@
 
 <body>
 
-<div class="container">
+<div class="app">
 
-    <header>
+    <header class="header">
 
-        <h1>ScreenLink</h1>
+        <div class="logo">
+            ScreenLink
+        </div>
 
-        <p id="phoneInfo">
-            Loading phone information...
-        </p>
+        <div
+            id="connectionStatus"
+            class="connection-status connecting"
+        >
+            <span class="status-dot"></span>
+            <span id="connectionText">
+                Connecting...
+            </span>
+        </div>
 
     </header>
 
 
-    <section>
+    <main>
 
-        <div class="section-header">
+        <section
+            id="connectingView"
+            class="connecting-view"
+        >
 
-            <h2>Connected Laptop</h2>
+            <div class="loader"></div>
 
-        </div>
+            <h1>
+                Connecting to laptop
+            </h1>
 
-        <div id="device">
-
-            <p class="muted">
-                Waiting for laptop...
+            <p>
+                Waiting for your laptop to register...
             </p>
 
-        </div>
-
-    </section>
+        </section>
 
 
-    <section>
+        <section
+            id="controlView"
+            class="control-view hidden"
+        >
 
-        <h2>Type Text</h2>
+            <div class="action-card">
 
-        <textarea
-            id="typeText"
-            placeholder="Enter text to type on the laptop..."
-            rows="8"
-        ></textarea>
+                <h2>
+                    Remote Control
+                </h2>
 
-        <div class="typing-buttons">
+                <p class="section-description">
+                    Control your connected laptop from your phone.
+                </p>
 
-            <button
-                id="typeButton"
-                onclick="sendTyping()"
-                disabled
-            >
-                Type on Laptop
-            </button>
 
-            <button
-                id="stopButton"
-                onclick="stopTyping()"
-                disabled
-            >
-                Stop Typing
-            </button>
+                <button
+                    id="screenshotButton"
+                    class="primary-button screenshot-button"
+                    onclick="takeScreenshot()"
+                >
 
-        </div>
+                    <span>
+                        Take Screenshot
+                    </span>
 
-        <p id="typeResult"></p>
+                </button>
 
-    </section>
+
+                <div
+                    id="screenshotResult"
+                    class="screenshot-result"
+                ></div>
+
+            </div>
+
+
+            <div class="action-card">
+
+                <h2>
+                    Type Text
+                </h2>
+
+                <p class="section-description">
+                    Enter text to type on the laptop.
+                </p>
+
+
+                <textarea
+                    id="typeText"
+                    placeholder="Enter text to type..."
+                    rows="8"
+                ></textarea>
+
+
+                <div class="typing-buttons">
+
+                    <button
+                        id="typeButton"
+                        class="primary-button"
+                        onclick="sendTyping()"
+                    >
+                        Start Typing
+                    </button>
+
+                    <button
+                        id="stopButton"
+                        class="secondary-button"
+                        onclick="stopTyping()"
+                        disabled
+                    >
+                        Stop Typing
+                    </button>
+
+                </div>
+
+
+                <p
+                    id="typeResult"
+                    class="result"
+                ></p>
+
+            </div>
+
+        </section>
+
+    </main>
 
 </div>
 
@@ -98,3 +162,4 @@
 </body>
 
 </html>
+```
