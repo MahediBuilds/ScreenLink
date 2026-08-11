@@ -1,6 +1,7 @@
 import os
+import platform
+import subprocess
 import time
-import mss
 
 from logger import log, log_error
 
@@ -35,35 +36,62 @@ def capture_screen():
         filename
     )
 
+    system = platform.system()
+
+    log(
+        f"Operating system -> {system}"
+    )
+
     try:
 
-        log(
-            "Capturing screenshot..."
-        )
+        if system == "Windows":
 
-        with mss.mss() as sct:
+            capture_windows(path)
 
-            sct.shot(
-                output=path
+        elif system == "Darwin":
+
+            capture_macos(path)
+
+        else:
+
+            log_error(
+                f"Unsupported operating system -> "
+                f"{system}"
             )
 
-        size = os.path.getsize(
-            path
-        )
+            return None
+
+        if not os.path.exists(path):
+
+            log_error(
+                "Screenshot file was not created"
+            )
+
+            return None
+
+        size = os.path.getsize(path)
+
+        if size == 0:
+
+            log_error(
+                "Screenshot file is empty"
+            )
+
+            return None
 
         log(
             f"Screenshot saved -> {path}"
         )
 
         log(
-            f"Screenshot size -> "
-            f"{size} bytes"
+            f"Screenshot size -> {size} bytes"
         )
 
         return {
             "path": path,
             "timestamp": timestamp,
-            "filename": filename
+            "filename": filename,
+            "size": size
         }
 
     except Exception as e:
@@ -74,3 +102,54 @@ def capture_screen():
         )
 
         return None
+
+
+def capture_windows(path):
+
+    log(
+        "Using Windows screenshot method"
+    )
+
+    try:
+
+        import mss
+
+        with mss.mss() as sct:
+
+            sct.shot(
+                output=path
+            )
+
+    except Exception as e:
+
+        log_error(
+            "Windows screenshot failed: "
+            + str(e)
+        )
+
+        raise
+
+
+def capture_macos(path):
+
+    log(
+        "Using macOS screenshot method"
+    )
+
+    result = subprocess.run(
+        [
+            "screencapture",
+            "-x",
+            path
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30
+    )
+
+    if result.returncode != 0:
+
+        raise RuntimeError(
+            "macOS screencapture failed: "
+            + result.stderr
+        )
