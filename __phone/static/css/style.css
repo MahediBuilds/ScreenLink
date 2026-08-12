@@ -31,7 +31,8 @@ body {
 
 
 button,
-textarea {
+textarea,
+select {
     font: inherit;
 }
 
@@ -57,7 +58,10 @@ button:disabled {
 
     margin: 0 auto;
 
-    padding: 24px 18px 50px;
+    padding:
+        24px
+        18px
+        50px;
 }
 
 
@@ -76,7 +80,8 @@ button:disabled {
 
     padding-bottom: 22px;
 
-    border-bottom: 1px solid #262626;
+    border-bottom:
+        1px solid #262626;
 }
 
 
@@ -107,7 +112,9 @@ button:disabled {
 
     gap: 8px;
 
-    padding: 7px 11px;
+    padding:
+        7px
+        11px;
 
     border-radius: 20px;
 
@@ -183,7 +190,10 @@ button:disabled {
 
 
 .connecting-view h2 {
-    margin: 20px 0 8px;
+    margin:
+        20px
+        0
+        8px;
 
     font-size: 25px;
 }
@@ -203,14 +213,19 @@ button:disabled {
 
     height: 38px;
 
-    border: 3px solid #292929;
+    border:
+        3px solid #292929;
 
-    border-top-color: #eee;
+    border-top-color:
+        #eee;
 
     border-radius: 50%;
 
     animation:
-        spin 0.9s linear infinite;
+        spin
+        0.9s
+        linear
+        infinite;
 }
 
 
@@ -226,7 +241,8 @@ button:disabled {
 @keyframes spin {
 
     to {
-        transform: rotate(360deg);
+        transform:
+            rotate(360deg);
     }
 
 }
@@ -241,7 +257,8 @@ button:disabled {
 
     padding: 20px;
 
-    border: 1px solid #242424;
+    border:
+        1px solid #242424;
 
     border-radius: 14px;
 
@@ -272,11 +289,30 @@ button:disabled {
 
 
 .section h3 {
-    margin: 0 0 8px;
+    margin: 0;
 
     font-size: 17px;
 
     font-weight: 600;
+}
+
+
+.subheading {
+    margin-top: 24px !important;
+
+    margin-bottom: 10px !important;
+}
+
+
+.section-description {
+    margin:
+        7px
+        0
+        17px;
+
+    line-height: 1.5;
+
+    font-size: 13px;
 }
 
 
@@ -286,7 +322,10 @@ button:disabled {
 
 
 #deviceInfo {
-    margin: 5px 0 0;
+    margin:
+        5px
+        0
+        0;
 
     font-size: 13px;
 }
@@ -298,7 +337,9 @@ button:disabled {
 
 .primary-button,
 .secondary-button {
-    padding: 11px 16px;
+    padding:
+        11px
+        16px;
 
     border-radius: 8px;
 
@@ -329,50 +370,13 @@ button:disabled {
 .primary-button:not(:disabled):active,
 .secondary-button:not(:disabled):active,
 .small-button:not(:disabled):active {
-    transform: scale(0.98);
+    transform:
+        scale(0.98);
 }
 
 
-/* ========================================= */
-/* TEXTBOX ACTIONS                           */
-/* ========================================= */
-
-.textbox-actions {
-    display: flex;
-
-    justify-content: flex-end;
-
-    gap: 8px;
-
-    margin-top: 8px;
-
-    margin-bottom: 12px;
-}
-
-
-.small-button {
-    padding: 7px 13px;
-
-    border: 1px solid #303030;
-
-    border-radius: 7px;
-
-    background: #1b1b1b;
-
-    color: #d0d0d0;
-
-    font-size: 13px;
-
-    font-weight: 500;
-
-    transition:
-        background 0.15s ease,
-        transform 0.15s ease;
-}
-
-
-.small-button:hover {
-    background: #242424;
+.full-width-button {
+    width: 100%;
 }
 
 
@@ -436,25 +440,245 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* CHATGPT CLICK SECTION                    */
-/* ========================================= */
+.screenshot-actions {
+    display: flex;
 
-.ai-click-section {
-    margin-top: 20px;
+    justify-content: flex-end;
 
-    padding-top: 20px;
+    gap: 8px;
 
-    border-top: 1px solid #292929;
+    margin-top: 10px;
 }
 
 
-.ai-click-section p {
-    line-height: 1.5;
+/* ========================================= */
+/* PROMPTS                                   */
+/* ========================================= */
+
+.prompt-box {
+    margin-top: 15px;
+
+    overflow: hidden;
+
+    border:
+        1px solid #303030;
+
+    border-radius: 9px;
+
+    background: #0a0a0a;
+}
+
+
+.prompt-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding:
+        9px
+        12px;
+
+    border-bottom:
+        1px solid #292929;
+
+    background: #151515;
+
+    color: #bbb;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.4px;
+}
+
+
+.prompt-label {
+    padding:
+        3px
+        7px;
+
+    border-radius: 5px;
+
+    background: #222;
+
+    color: #777;
+
+    font-size: 10px;
+
+    text-transform: uppercase;
+}
+
+
+.prompt-label.editable {
+    background: #252525;
+
+    color: #ddd;
+}
+
+
+.prompt-text {
+    display: block;
+
+    width: 100%;
+
+    min-height: 180px;
+
+    margin: 0;
+
+    padding: 13px;
+
+    border: none;
+
+    outline: none;
+
+    background: #0a0a0a;
+
+    color: #aaa;
+
+    font-family:
+        "Consolas",
+        "Courier New",
+        monospace;
+
+    font-size: 12px;
+
+    line-height: 1.55;
+
+    resize: vertical;
+}
+
+
+.prompt-text:not([readonly]) {
+    color: #eee;
+}
+
+
+.prompt-actions {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    margin-top: 9px;
+}
+
+
+.custom-info {
+    margin-top: 8px;
+
+    color: #777;
+
+    font-size: 12px;
+}
+
+
+/* ========================================= */
+/* TASK SELECT                               */
+/* ========================================= */
+
+.field-label {
+    display: block;
+
+    margin-top: 14px;
+
+    margin-bottom: 7px;
+
+    color: #999;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.5px;
+}
+
+
+.task-select {
+    width: 100%;
+
+    padding:
+        11px
+        13px;
+
+    border:
+        1px solid #303030;
+
+    border-radius: 8px;
+
+    outline: none;
+
+    background: #0a0a0a;
+
+    color: #eee;
+
+    font-size: 14px;
+}
+
+
+.task-select:focus {
+    border-color: #666;
+}
+
+
+/* ========================================= */
+/* TEXTBOX ACTIONS                           */
+/* ========================================= */
+
+.textbox-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    margin-top: 8px;
+
+    margin-bottom: 12px;
+}
+
+
+.small-button {
+    padding:
+        7px
+        13px;
+
+    border:
+        1px solid #303030;
+
+    border-radius: 7px;
+
+    background: #1b1b1b;
+
+    color: #d0d0d0;
 
     font-size: 13px;
+
+    font-weight: 500;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
 }
 
+
+.small-button:hover {
+    background: #242424;
+}
+
+
+/* ========================================= */
+/* CLICK JSON                                */
+/* ========================================= */
 
 .click-json {
     display: block;
@@ -463,11 +687,15 @@ button:disabled {
 
     min-height: 190px;
 
-    margin: 14px 0 0;
+    margin:
+        14px
+        0
+        0;
 
     padding: 13px;
 
-    border: 1px solid #303030;
+    border:
+        1px solid #303030;
 
     border-radius: 9px;
 
@@ -504,13 +732,17 @@ button:disabled {
 
     width: 100%;
 
-    min-height: 140px;
+    min-height: 150px;
 
-    margin: 15px 0 0;
+    margin:
+        14px
+        0
+        0;
 
     padding: 13px;
 
-    border: 1px solid #303030;
+    border:
+        1px solid #303030;
 
     border-radius: 9px;
 
@@ -547,7 +779,10 @@ button:disabled {
 .result {
     min-height: 20px;
 
-    margin: 12px 0 0;
+    margin:
+        12px
+        0
+        0;
 
     font-size: 13px;
 }
@@ -569,6 +804,64 @@ button:disabled {
 
 
 /* ========================================= */
+/* TEMPORARY MESSAGE                         */
+/* ========================================= */
+
+.temporary-message {
+    position: fixed;
+
+    left: 50%;
+
+    bottom: 22px;
+
+    z-index: 1000;
+
+    max-width:
+        calc(100% - 30px);
+
+    padding:
+        10px
+        15px;
+
+    border:
+        1px solid #333;
+
+    border-radius: 9px;
+
+    background: #1b1b1b;
+
+    color: #eee;
+
+    font-size: 13px;
+
+    text-align: center;
+
+    box-shadow:
+        0 8px 30px
+        rgba(0, 0, 0, 0.4);
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    transform:
+        translate(-50%, 10px);
+
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+}
+
+
+.temporary-message.visible {
+    opacity: 1;
+
+    transform:
+        translate(-50%, 0);
+}
+
+
+/* ========================================= */
 /* MOBILE                                    */
 /* ========================================= */
 
@@ -585,7 +878,8 @@ button:disabled {
 
 
     .header {
-        align-items: flex-start;
+        align-items:
+            flex-start;
     }
 
 
@@ -611,9 +905,11 @@ button:disabled {
 
 
     .section-header {
-        align-items: flex-start;
+        align-items:
+            flex-start;
 
-        flex-direction: column;
+        flex-direction:
+            column;
     }
 
 
@@ -623,8 +919,33 @@ button:disabled {
     }
 
 
+    .prompt-actions {
+        justify-content:
+            stretch;
+    }
+
+
+    .prompt-actions
+    .small-button {
+        flex: 1;
+    }
+
+
+    .screenshot-actions {
+        justify-content:
+            stretch;
+    }
+
+
+    .screenshot-actions
+    .small-button {
+        width: 100%;
+    }
+
+
     .typing-buttons {
-        flex-direction: column;
+        flex-direction:
+            column;
     }
 
 
@@ -634,7 +955,8 @@ button:disabled {
 
 
     .textbox-actions {
-        justify-content: flex-end;
+        justify-content:
+            flex-end;
     }
 
 }

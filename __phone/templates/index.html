@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/style.css?v=4"
+        href="/static/css/style.css?v=5"
     >
 
 </head>
@@ -52,9 +52,9 @@
     </header>
 
 
-    <!-- =============================== -->
-    <!-- CONNECTING VIEW                  -->
-    <!-- =============================== -->
+    <!-- ================================= -->
+    <!-- CONNECTING VIEW                    -->
+    <!-- ================================= -->
 
     <main
         id="connectingView"
@@ -74,16 +74,19 @@
     </main>
 
 
-    <!-- =============================== -->
-    <!-- CONTROL VIEW                     -->
-    <!-- =============================== -->
+    <!-- ================================= -->
+    <!-- CONTROL VIEW                       -->
+    <!-- ================================= -->
 
     <main
         id="controlView"
         class="view hidden"
     >
 
-        <!-- SCREENSHOT -->
+
+        <!-- ================================= -->
+        <!-- SCREENSHOT                         -->
+        <!-- ================================= -->
 
         <section class="section">
 
@@ -133,27 +136,99 @@
             </div>
 
 
-            <!-- AI CLICK CONTROL -->
-
             <div
-                id="aiClickSection"
-                class="ai-click-section hidden"
+                id="screenshotActions"
+                class="screenshot-actions hidden"
             >
 
-                <h3>
-                    Execute ChatGPT Clicks
-                </h3>
+                <button
+                    class="small-button"
+                    onclick="copyImage()"
+                >
+                    Copy Image
+                </button>
 
-                <p class="muted">
-                    Give the screenshot to ChatGPT,
-                    then paste its normalized JSON here.
-                </p>
+            </div>
+
+        </section>
+
+
+        <!-- ================================= -->
+        <!-- CLICK VISION                       -->
+        <!-- ================================= -->
+
+        <section class="section">
+
+            <h2>
+                Click Vision
+            </h2>
+
+            <p class="muted section-description">
+                Use the screenshot with ChatGPT to identify
+                the objects that should be clicked.
+            </p>
+
+
+            <div class="prompt-box">
+
+                <div class="prompt-header">
+
+                    <span>
+                        Click Prompt
+                    </span>
+
+                    <span class="prompt-label">
+                        Fixed
+                    </span>
+
+                </div>
 
 
                 <textarea
-                    id="clickJson"
-                    class="click-json"
-                    placeholder='{
+                    id="clickPrompt"
+                    class="prompt-text"
+                    rows="12"
+                    readonly
+                ></textarea>
+
+            </div>
+
+
+            <div class="prompt-actions">
+
+                <button
+                    class="small-button"
+                    onclick="copyPrompt('click')"
+                >
+                    Copy Prompt
+                </button>
+
+                <button
+                    class="small-button"
+                    onclick="copyImageAndPrompt('click')"
+                >
+                    Copy Image + Prompt
+                </button>
+
+                <button
+                    class="small-button"
+                    onclick="shareImageAndPrompt('click')"
+                >
+                    Share
+                </button>
+
+            </div>
+
+
+            <h3 class="subheading">
+                ChatGPT Response
+            </h3>
+
+
+            <textarea
+                id="clickJson"
+                class="click-json"
+                placeholder='{
   "steps": [
     {
       "action": "click",
@@ -166,51 +241,51 @@
     }
   ]
 }'
-                    rows="10"
-                ></textarea>
+                rows="10"
+            ></textarea>
 
 
-                <div class="textbox-actions">
-
-                    <button
-                        type="button"
-                        class="small-button"
-                        onclick="pasteInto('clickJson')"
-                    >
-                        Paste
-                    </button>
-
-                    <button
-                        type="button"
-                        class="small-button"
-                        onclick="clearTextbox('clickJson')"
-                    >
-                        Clear
-                    </button>
-
-                </div>
-
+            <div class="textbox-actions">
 
                 <button
-                    id="executeClickButton"
-                    class="primary-button"
-                    onclick="executeClicks()"
+                    type="button"
+                    class="small-button"
+                    onclick="pasteInto('clickJson')"
                 >
-                    Execute Clicks
+                    Paste
                 </button>
 
-
-                <p
-                    id="clickResult"
-                    class="result"
-                ></p>
+                <button
+                    type="button"
+                    class="small-button"
+                    onclick="clearTextbox('clickJson')"
+                >
+                    Clear
+                </button>
 
             </div>
+
+
+            <button
+                id="executeClickButton"
+                class="primary-button full-width-button"
+                onclick="executeClicks()"
+            >
+                Execute Clicks
+            </button>
+
+
+            <p
+                id="clickResult"
+                class="result"
+            ></p>
 
         </section>
 
 
-        <!-- TYPING -->
+        <!-- ================================= -->
+        <!-- TYPING                             -->
+        <!-- ================================= -->
 
         <section class="section">
 
@@ -219,11 +294,124 @@
             </h2>
 
 
+            <p class="muted section-description">
+                Select the type of task ChatGPT should solve.
+            </p>
+
+
+            <label
+                class="field-label"
+                for="taskType"
+            >
+                Task Type
+            </label>
+
+
+            <select
+                id="taskType"
+                class="task-select"
+                onchange="changeTaskType()"
+            >
+
+                <option value="python">
+                    Python
+                </option>
+
+                <option value="sql">
+                    SQL
+                </option>
+
+                <option value="fill_blank">
+                    Fill in the Blank
+                </option>
+
+                <option value="email">
+                    Email
+                </option>
+
+                <option value="general">
+                    General
+                </option>
+
+                <option value="custom">
+                    Custom
+                </option>
+
+            </select>
+
+
+            <div class="prompt-box">
+
+                <div class="prompt-header">
+
+                    <span id="typingPromptTitle">
+                        Python Prompt
+                    </span>
+
+                    <span
+                        id="typingPromptLabel"
+                        class="prompt-label"
+                    >
+                        Fixed
+                    </span>
+
+                </div>
+
+
+                <textarea
+                    id="typingPrompt"
+                    class="prompt-text"
+                    rows="10"
+                    readonly
+                ></textarea>
+
+            </div>
+
+
+            <div class="prompt-actions">
+
+                <button
+                    class="small-button"
+                    onclick="copyPrompt('typing')"
+                >
+                    Copy Prompt
+                </button>
+
+                <button
+                    class="small-button"
+                    onclick="copyImageAndPrompt('typing')"
+                >
+                    Copy Image + Prompt
+                </button>
+
+                <button
+                    class="small-button"
+                    onclick="shareImageAndPrompt('typing')"
+                >
+                    Share
+                </button>
+
+            </div>
+
+
+            <div
+                id="customPromptInfo"
+                class="custom-info hidden"
+            >
+                Custom Prompt is editable.
+            </div>
+
+
+            <h3 class="subheading">
+                ChatGPT Response
+            </h3>
+
+
             <textarea
                 id="typeText"
                 class="type-text"
-                placeholder="Enter text to type on the laptop..."
-                rows="6"
+                placeholder="Paste the answer from ChatGPT here..."
+                rows="8"
             ></textarea>
 
 
@@ -284,7 +472,7 @@
 
 
 <script
-    src="/static/js/app.js?v=4"
+    src="/static/js/app.js?v=5"
 ></script>
 
 </body>

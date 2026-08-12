@@ -4,6 +4,206 @@ let polling = false;
 
 let activeTyping = false;
 
+let latestScreenshotBlob = null;
+
+let latestScreenshotUrl = null;
+
+
+/* ========================================= */
+/* PROMPTS                                   */
+/* ========================================= */
+
+const CLICK_PROMPT = `
+You are an expert GUI vision agent.
+
+The screenshot resolution is:
+
+Width = {screen_width}
+Height = {screen_height}
+
+The screenshot contains a benchmark application.
+
+Read the instruction shown at the top.
+
+The instruction may require selecting ONE object or MULTIPLE objects.
+
+Your job is to identify every object that should be clicked.
+
+Return ONLY valid JSON.
+
+Format:
+
+{
+  "steps": [
+    {
+      "action": "click",
+      "target": "Circle",
+      "confidence": 0.99,
+      "point": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ]
+}
+
+Rules:
+
+- Return ONE click step for EVERY object that must be selected.
+- If multiple objects satisfy the instruction, include multiple click steps.
+- Preserve the logical order of clicks.
+- Identify the center point of the object that should be clicked.
+- Coordinates must be NORMALIZED from 0 to 1000.
+- x represents horizontal position.
+- y represents vertical position.
+- x=0 is the far left of the screenshot.
+- x=1000 is the far right of the screenshot.
+- y=0 is the top of the screenshot.
+- y=1000 is the bottom of the screenshot.
+- Confidence should be between 0 and 1.
+- Return JSON ONLY.
+- No markdown.
+- No explanations.
+
+Example:
+
+{
+  "steps": [
+    {
+      "action": "click",
+      "target": "Java",
+      "confidence": 0.99,
+      "point": {
+        "x": 366,
+        "y": 347
+      }
+    }
+  ]
+}
+`.trim();
+
+
+const PROMPTS = {
+
+    python: `
+You are an expert Python programmer.
+
+Analyze the screenshot carefully.
+
+Read the complete programming question shown in the screenshot.
+
+Determine exactly what the question is asking.
+
+Write the correct Python solution.
+
+Return ONLY the Python code required to solve the problem.
+
+Do not provide explanations.
+
+Do not provide markdown code fences.
+
+Do not include comments unless comments are explicitly required.
+
+Make sure the code is complete and directly executable.
+`.trim(),
+
+
+    sql: `
+You are an expert SQL programmer.
+
+Analyze the screenshot carefully.
+
+Read the database schema, tables, columns, relationships, and question shown in the screenshot.
+
+Determine exactly what SQL query is required.
+
+Return ONLY the SQL query.
+
+Do not provide explanations.
+
+Do not provide markdown code fences.
+
+Do not include additional text.
+
+Make sure the query directly answers the question.
+`.trim(),
+
+
+    fill_blank: `
+Analyze the screenshot carefully.
+
+Read the complete question and identify exactly what belongs in the blank.
+
+Return ONLY the answer that should replace the blank.
+
+Do not provide explanations.
+
+Do not repeat the question.
+
+Do not include markdown.
+
+Do not write phrases such as "The answer is".
+
+Return only the required answer.
+`.trim(),
+
+
+    email: `
+You are an expert professional email writer.
+
+Analyze the screenshot carefully.
+
+Read the complete instructions shown in the screenshot.
+
+Write the appropriate email based on those instructions.
+
+Return ONLY the complete email.
+
+Do not provide explanations.
+
+Do not provide markdown.
+
+Do not describe what you are doing.
+
+Use an appropriate professional tone unless the screenshot specifically requests a different tone.
+`.trim(),
+
+
+    general: `
+Analyze the screenshot carefully.
+
+Read the complete question or task shown in the screenshot.
+
+Determine exactly what is being asked.
+
+Provide the correct answer.
+
+Return ONLY the answer required by the question.
+
+Do not provide unnecessary explanations.
+
+Do not include markdown unless it is explicitly required by the question.
+`.trim()
+
+};
+
+
+const TASK_NAMES = {
+
+    python: "Python",
+
+    sql: "SQL",
+
+    fill_blank: "Fill in the Blank",
+
+    email: "Email",
+
+    general: "General",
+
+    custom: "Custom"
+
+};
+
 
 /* ========================================= */
 /* INITIALIZATION                            */
@@ -13,7 +213,16 @@ document.addEventListener(
     "DOMContentLoaded",
     function () {
 
+        document.getElementById(
+            "clickPrompt"
+        ).value = CLICK_PROMPT;
+
+
+        changeTaskType();
+
+
         checkConnection();
+
 
         setInterval(
             checkConnection,
@@ -256,80 +465,105 @@ function showDisconnected() {
 
 
 /* ========================================= */
-/* CLIPBOARD                                 */
+/* TASK TYPE                                 */
 /* ========================================= */
 
-async function pasteInto(
-    elementId
-) {
+function changeTaskType() {
 
-    const element =
+    const select =
         document.getElementById(
-            elementId
+            "taskType"
         );
 
 
-    if (!element) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const text =
-            await navigator.clipboard.readText();
+    const prompt =
+        document.getElementById(
+            "typingPrompt"
+        );
 
 
-        if (!text) {
-
-            return;
-
-        }
-
-
-        element.value =
-            text;
+    const title =
+        document.getElementById(
+            "typingPromptTitle"
+        );
 
 
-        element.focus();
+    const label =
+        document.getElementById(
+            "typingPromptLabel"
+        );
 
 
-    } catch (error) {
-
-        /*
-         * Clipboard access can be denied by
-         * the browser if permission has not
-         * been granted.
-         */
-
-        element.focus();
+    const customInfo =
+        document.getElementById(
+            "customPromptInfo"
+        );
 
 
-        try {
-
-            const success =
-                document.execCommand(
-                    "paste"
-                );
+    const type =
+        select.value;
 
 
-            if (!success) {
+    title.textContent =
+        `${TASK_NAMES[type]} Prompt`;
 
-                alert(
-                    "Clipboard access was blocked. Please paste manually."
-                );
 
-            }
+    if (
+        type === "custom"
+    ) {
 
-        } catch {
+        prompt.readOnly =
+            false;
 
-            alert(
-                "Clipboard access was blocked. Please paste manually."
-            );
 
-        }
+        prompt.value =
+            "";
+
+
+        prompt.placeholder =
+            "Write your custom prompt here...";
+
+
+        label.textContent =
+            "Editable";
+
+
+        label.classList.add(
+            "editable"
+        );
+
+
+        customInfo.classList.remove(
+            "hidden"
+        );
+
+
+    } else {
+
+        prompt.readOnly =
+            true;
+
+
+        prompt.value =
+            PROMPTS[type];
+
+
+        prompt.placeholder =
+            "";
+
+
+        label.textContent =
+            "Fixed";
+
+
+        label.classList.remove(
+            "editable"
+        );
+
+
+        customInfo.classList.add(
+            "hidden"
+        );
 
     }
 
@@ -337,78 +571,46 @@ async function pasteInto(
 
 
 /* ========================================= */
-/* CLEAR TEXTBOX                             */
+/* ACTIVE PROMPT                             */
 /* ========================================= */
 
-function clearTextbox(
-    elementId
+function getPrompt(
+    type
 ) {
 
-    const element =
+    if (
+        type === "click"
+    ) {
+
+        return CLICK_PROMPT;
+
+    }
+
+
+    const select =
         document.getElementById(
-            elementId
+            "taskType"
         );
 
 
-    if (!element) {
-
-        return;
-
-    }
-
-
-    element.value = "";
-
-
-    element.focus();
+    const selectedType =
+        select.value;
 
 
     if (
-        elementId === "clickJson"
+        selectedType === "custom"
     ) {
 
-        const result =
-            document.getElementById(
-                "clickResult"
-            );
-
-
-        if (result) {
-
-            result.textContent =
-                "";
-
-
-            result.className =
-                "result";
-
-        }
+        return document.getElementById(
+            "typingPrompt"
+        ).value.trim();
 
     }
 
 
-    if (
-        elementId === "typeText"
-    ) {
-
-        const result =
-            document.getElementById(
-                "typeResult"
-            );
-
-
-        if (result) {
-
-            result.textContent =
-                "";
-
-
-            result.className =
-                "result";
-
-        }
-
-    }
+    return PROMPTS[
+        selectedType
+    ];
 
 }
 
@@ -438,9 +640,9 @@ async function takeScreenshot() {
         );
 
 
-    const aiSection =
+    const actions =
         document.getElementById(
-            "aiClickSection"
+            "screenshotActions"
         );
 
 
@@ -450,11 +652,6 @@ async function takeScreenshot() {
 
     button.textContent =
         "Capturing...";
-
-
-    aiSection.classList.add(
-        "hidden"
-    );
 
 
     container.innerHTML = `
@@ -470,6 +667,29 @@ async function takeScreenshot() {
         </div>
 
     `;
+
+
+    actions.classList.add(
+        "hidden"
+    );
+
+
+    latestScreenshotBlob =
+        null;
+
+
+    if (
+        latestScreenshotUrl
+    ) {
+
+        URL.revokeObjectURL(
+            latestScreenshotUrl
+        );
+
+        latestScreenshotUrl =
+            null;
+
+    }
 
 
     try {
@@ -533,7 +753,20 @@ async function takeScreenshot() {
         }
 
 
-        const url =
+        /*
+         * Keep the ORIGINAL PNG blob.
+         *
+         * The displayed image may be scaled
+         * by CSS, but this blob remains the
+         * original screenshot received from
+         * the laptop.
+         */
+
+        latestScreenshotBlob =
+            blob;
+
+
+        latestScreenshotUrl =
             URL.createObjectURL(
                 blob
             );
@@ -553,10 +786,14 @@ async function takeScreenshot() {
             "Laptop screenshot";
 
 
+        image.src =
+            latestScreenshotUrl;
+
+
         image.onload =
             function () {
 
-                aiSection.classList.remove(
+                actions.classList.remove(
                     "hidden"
                 );
 
@@ -565,11 +802,6 @@ async function takeScreenshot() {
 
         image.onerror =
             function () {
-
-                URL.revokeObjectURL(
-                    url
-                );
-
 
                 container.innerHTML = `
 
@@ -582,10 +814,6 @@ async function takeScreenshot() {
                 `;
 
             };
-
-
-        image.src =
-            url;
 
 
         container.innerHTML =
@@ -628,7 +856,453 @@ async function takeScreenshot() {
 
 
 /* ========================================= */
-/* CHATGPT CLICK EXECUTION                   */
+/* COPY IMAGE                                */
+/* ========================================= */
+
+async function copyImage() {
+
+    if (
+        !latestScreenshotBlob
+    ) {
+
+        showTemporaryMessage(
+            "Take a screenshot first."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !navigator.clipboard
+        ||
+        !window.ClipboardItem
+    ) {
+
+        showTemporaryMessage(
+            "Image clipboard is not supported by this browser."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const item =
+            new ClipboardItem({
+
+                "image/png":
+                    latestScreenshotBlob
+
+            });
+
+
+        await navigator.clipboard.write(
+            [item]
+        );
+
+
+        showTemporaryMessage(
+            "Original screenshot copied."
+        );
+
+
+    } catch (error) {
+
+        showTemporaryMessage(
+            "Unable to copy the image."
+        );
+
+    }
+
+}
+
+
+/* ========================================= */
+/* COPY PROMPT                               */
+/* ========================================= */
+
+async function copyPrompt(
+    type
+) {
+
+    const prompt =
+        getPrompt(
+            type
+        );
+
+
+    if (!prompt) {
+
+        showTemporaryMessage(
+            "Prompt is empty."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        await navigator.clipboard.writeText(
+            prompt
+        );
+
+
+        showTemporaryMessage(
+            "Prompt copied."
+        );
+
+
+    } catch (error) {
+
+        showTemporaryMessage(
+            "Unable to copy the prompt."
+        );
+
+    }
+
+}
+
+
+/* ========================================= */
+/* COPY IMAGE + PROMPT                       */
+/* ========================================= */
+
+async function copyImageAndPrompt(
+    type
+) {
+
+    if (
+        !latestScreenshotBlob
+    ) {
+
+        showTemporaryMessage(
+            "Take a screenshot first."
+        );
+
+        return;
+
+    }
+
+
+    const prompt =
+        getPrompt(
+            type
+        );
+
+
+    if (!prompt) {
+
+        showTemporaryMessage(
+            "Prompt is empty."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !navigator.clipboard
+        ||
+        !window.ClipboardItem
+    ) {
+
+        showTemporaryMessage(
+            "Combined clipboard is not supported. Use Copy Image and Copy Prompt separately."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const textBlob =
+            new Blob(
+                [prompt],
+                {
+                    type:
+                        "text/plain"
+                }
+            );
+
+
+        const item =
+            new ClipboardItem({
+
+                "image/png":
+                    latestScreenshotBlob,
+
+                "text/plain":
+                    textBlob
+
+            });
+
+
+        await navigator.clipboard.write(
+            [item]
+        );
+
+
+        showTemporaryMessage(
+            "Image + prompt copied."
+        );
+
+
+    } catch (error) {
+
+        showTemporaryMessage(
+            "Combined copy failed. Use Copy Image and Copy Prompt separately."
+        );
+
+    }
+
+}
+
+
+/* ========================================= */
+/* SHARE IMAGE + PROMPT                      */
+/* ========================================= */
+
+async function shareImageAndPrompt(
+    type
+) {
+
+    if (
+        !latestScreenshotBlob
+    ) {
+
+        showTemporaryMessage(
+            "Take a screenshot first."
+        );
+
+        return;
+
+    }
+
+
+    const prompt =
+        getPrompt(
+            type
+        );
+
+
+    if (!prompt) {
+
+        showTemporaryMessage(
+            "Prompt is empty."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !navigator.share
+    ) {
+
+        showTemporaryMessage(
+            "Sharing is not supported by this browser."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const file =
+            new File(
+
+                [
+                    latestScreenshotBlob
+                ],
+
+                "ScreenLink_Screenshot.png",
+
+                {
+                    type:
+                        "image/png"
+                }
+
+            );
+
+
+        const shareData = {
+
+            title:
+                "ScreenLink",
+
+            text:
+                prompt,
+
+            files:
+                [file]
+
+        };
+
+
+        if (
+            navigator.canShare
+            &&
+            !navigator.canShare(
+                shareData
+            )
+        ) {
+
+            throw new Error(
+                "Files cannot be shared."
+            );
+
+        }
+
+
+        await navigator.share(
+            shareData
+        );
+
+
+    } catch (error) {
+
+        if (
+            error.name ===
+            "AbortError"
+        ) {
+
+            return;
+
+        }
+
+
+        showTemporaryMessage(
+            "Unable to share image and prompt."
+        );
+
+    }
+
+}
+
+
+/* ========================================= */
+/* CLIPBOARD PASTE                           */
+/* ========================================= */
+
+async function pasteInto(
+    elementId
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const text =
+            await navigator.clipboard.readText();
+
+
+        if (!text) {
+
+            return;
+
+        }
+
+
+        element.value =
+            text;
+
+
+        element.focus();
+
+
+    } catch (error) {
+
+        element.focus();
+
+
+        showTemporaryMessage(
+            "Clipboard access was blocked. Use the keyboard paste option."
+        );
+
+    }
+
+}
+
+
+/* ========================================= */
+/* CLEAR TEXTBOX                             */
+/* ========================================= */
+
+function clearTextbox(
+    elementId
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    element.value =
+        "";
+
+
+    element.focus();
+
+
+    if (
+        elementId ===
+        "clickJson"
+    ) {
+
+        clearResult(
+            "clickResult"
+        );
+
+    }
+
+
+    if (
+        elementId ===
+        "typeText"
+    ) {
+
+        clearResult(
+            "typeResult"
+        );
+
+    }
+
+}
+
+
+/* ========================================= */
+/* EXECUTE CLICKS                            */
 /* ========================================= */
 
 async function executeClicks() {
@@ -967,7 +1641,7 @@ async function executeClicks() {
 
 
 /* ========================================= */
-/* TYPING                                    */
+/* START TYPING                              */
 /* ========================================= */
 
 async function startTyping() {
@@ -1009,7 +1683,7 @@ async function startTyping() {
 
             result,
 
-            "Enter some text first.",
+            "Paste the ChatGPT answer first.",
 
             "error"
 
@@ -1268,7 +1942,7 @@ async function stopTyping() {
 
 
 /* ========================================= */
-/* HELPERS                                   */
+/* RESULT HELPERS                            */
 /* ========================================= */
 
 function showResult(
@@ -1286,6 +1960,109 @@ function showResult(
 
 }
 
+
+function clearResult(
+    elementId
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    element.textContent =
+        "";
+
+
+    element.className =
+        "result";
+
+}
+
+
+/* ========================================= */
+/* TEMPORARY MESSAGE                         */
+/* ========================================= */
+
+let messageTimer = null;
+
+
+function showTemporaryMessage(
+    message
+) {
+
+    let element =
+        document.getElementById(
+            "temporaryMessage"
+        );
+
+
+    if (!element) {
+
+        element =
+            document.createElement(
+                "div"
+            );
+
+
+        element.id =
+            "temporaryMessage";
+
+
+        element.className =
+            "temporary-message";
+
+
+        document.body.appendChild(
+            element
+        );
+
+    }
+
+
+    element.textContent =
+        message;
+
+
+    element.classList.add(
+        "visible"
+    );
+
+
+    clearTimeout(
+        messageTimer
+    );
+
+
+    messageTimer =
+        setTimeout(
+
+            function () {
+
+                element.classList.remove(
+                    "visible"
+                );
+
+            },
+
+            2800
+
+        );
+
+}
+
+
+/* ========================================= */
+/* HTML ESCAPING                             */
+/* ========================================= */
 
 function escapeHtml(
     value
