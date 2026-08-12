@@ -9,10 +9,12 @@ BASE_DIR = os.path.dirname(
     os.path.abspath(__file__)
 )
 
+
 DATA_DIR = os.path.join(
     BASE_DIR,
     "data"
 )
+
 
 DEVICE_FILE = os.path.join(
     DATA_DIR,
@@ -22,13 +24,19 @@ DEVICE_FILE = os.path.join(
 
 class DeviceManager:
 
-    def __init__(self, heartbeat_timeout):
+    def __init__(
+        self,
+        heartbeat_timeout
+    ):
 
-        self.heartbeat_timeout = heartbeat_timeout
+        self.heartbeat_timeout = (
+            heartbeat_timeout
+        )
 
-        self.device = None
+        self.devices = {}
 
         self.load()
+
 
     def load(self):
 
@@ -37,15 +45,17 @@ class DeviceManager:
             exist_ok=True
         )
 
+
         if not os.path.exists(
             DEVICE_FILE
         ):
 
-            self.device = None
+            self.devices = {}
 
             self.save()
 
             return
+
 
         try:
 
@@ -55,45 +65,27 @@ class DeviceManager:
                 encoding="utf-8"
             ) as f:
 
-                data = json.load(f)
-
-            if isinstance(data, dict) and data:
-
-                if "name" in data:
-
-                    self.device = data
-
-                else:
-
-                    devices = list(data.values())
-
-                    if devices:
-
-                        self.device = devices[0]
-
-                    else:
-
-                        self.device = None
-
-            else:
-
-                self.device = None
-
-            if self.device:
-
-                log(
-                    "Loaded registered laptop -> "
-                    f"{self.device['name']}"
+                self.devices = json.load(
+                    f
                 )
+
+
+            log(
+                f"Loaded {len(self.devices)} "
+                f"registered device(s)"
+            )
+
 
         except Exception as e:
 
             log_error(
-                "Failed to load device: "
+                "Failed to load devices: "
                 + str(e)
             )
 
-            self.device = None
+
+            self.devices = {}
+
 
     def save(self):
 
@@ -101,6 +93,7 @@ class DeviceManager:
             DATA_DIR,
             exist_ok=True
         )
+
 
         try:
 
@@ -111,17 +104,19 @@ class DeviceManager:
             ) as f:
 
                 json.dump(
-                    self.device or {},
+                    self.devices,
                     f,
                     indent=4
                 )
 
+
         except Exception as e:
 
             log_error(
-                "Failed to save device: "
+                "Failed to save devices: "
                 + str(e)
             )
+
 
     def register(
         self,
@@ -131,26 +126,35 @@ class DeviceManager:
     ):
 
         existing = (
-            self.device is not None
+            device_name
+            in self.devices
         )
 
-        self.device = {
 
-            "name": device_name,
+        self.devices[device_name] = {
 
-            "ip": ip,
+            "name":
+                device_name,
 
-            "port": int(port),
+            "ip":
+                ip,
 
-            "last_seen": time.time()
+            "port":
+                int(port),
+
+            "last_seen":
+                time.time()
+
         }
 
+
         self.save()
+
 
         if existing:
 
             log(
-                f"Laptop re-registered -> "
+                f"Device re-registered -> "
                 f"{device_name} "
                 f"({ip}:{port})"
             )
@@ -158,10 +162,11 @@ class DeviceManager:
         else:
 
             log(
-                f"Laptop registered -> "
+                f"Device registered -> "
                 f"{device_name} "
                 f"({ip}:{port})"
             )
+
 
     def heartbeat(
         self,
@@ -170,93 +175,174 @@ class DeviceManager:
         port=None
     ):
 
-        if self.device is None:
-
-            return False
-
         if (
-            self.device["name"]
-            != device_name
+            device_name
+            not in self.devices
         ):
 
             return False
 
-        self.device["last_seen"] = (
+
+        device = (
+            self.devices[
+                device_name
+            ]
+        )
+
+
+        device["last_seen"] = (
             time.time()
         )
 
+
         if ip:
-            self.device["ip"] = ip
+
+            device["ip"] = ip
+
 
         if port:
-            self.device["port"] = int(port)
+
+            device["port"] = int(
+                port
+            )
+
 
         self.save()
 
+
         return True
 
-    def get_device(self):
 
-        return self.device
+    def add_manual_device(
+        self,
+        device_name,
+        ip,
+        port
+    ):
 
-    def is_online(self):
+        self.devices[device_name] = {
 
-        if self.device is None:
+            "name":
+                device_name,
 
-            return False
+            "ip":
+                ip,
+
+            "port":
+                int(port),
+
+            "last_seen":
+                time.time()
+
+        }
+
+
+        self.save()
+
+
+        log(
+            f"Manual device added -> "
+            f"{device_name} "
+            f"({ip}:{port})"
+        )
+
+
+    def get_device(
+        self,
+        device_name
+    ):
+
+        return self.devices.get(
+            device_name
+        )
+
+
+    def is_online(
+        self,
+        device
+    ):
 
         elapsed = (
+
             time.time()
-            - self.device["last_seen"]
+
+            - device["last_seen"]
+
         )
+
 
         return (
             elapsed
             <= self.heartbeat_timeout
         )
 
-    def get_status(self):
 
-        if self.device is None:
+    def get_devices(self):
 
-            return None
+        result = []
 
-        return {
 
-            "name":
-                self.device["name"],
+        for device in (
+            self.devices.values()
+        ):
 
-            "ip":
-                self.device["ip"],
+            result.append({
 
-            "port":
-                self.device["port"],
+                "name":
+                    device["name"],
 
-            "online":
-                self.is_online(),
+                "ip":
+                    device["ip"],
 
-            "last_seen_seconds":
-                round(
-                    time.time()
-                    - self.device["last_seen"],
-                    1
-                )
-        }
+                "port":
+                    device["port"],
 
-    def remove_device(self):
+                "online":
+                    self.is_online(
+                        device
+                    ),
 
-        if self.device is not None:
+                "last_seen_seconds":
+                    round(
 
-            name = self.device["name"]
+                        time.time()
+                        - device["last_seen"],
 
-            self.device = None
+                        1
+
+                    )
+
+            })
+
+
+        return result
+
+
+    def remove_device(
+        self,
+        device_name
+    ):
+
+        if (
+            device_name
+            in self.devices
+        ):
+
+            del self.devices[
+                device_name
+            ]
+
 
             self.save()
 
+
             log(
-                f"Laptop removed -> {name}"
+                f"Device removed -> "
+                f"{device_name}"
             )
 
+
             return True
+
 
         return False
