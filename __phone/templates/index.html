@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 
 <head>
 
@@ -8,17 +7,18 @@
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1"
+        content="width=device-width, initial-scale=1.0"
     >
 
     <title>ScreenLink</title>
 
     <link
         rel="stylesheet"
-        href="{{ url_for('static', filename='css/style.css') }}"
+        href="/static/css/style.css?v=3"
     >
 
 </head>
+
 
 <body>
 
@@ -26,19 +26,25 @@
 
     <header class="header">
 
-        <div class="logo">
-            ScreenLink
+        <div>
+
+            <h1>ScreenLink</h1>
+
+            <p id="connectionText">
+                Connecting...
+            </p>
+
         </div>
 
         <div
-            id="connectionStatus"
-            class="connection-status connecting"
+            id="connectionIndicator"
+            class="connection-indicator connecting"
         >
 
-            <span class="status-dot"></span>
+            <span class="indicator-dot"></span>
 
-            <span id="connectionText">
-                Connecting...
+            <span id="connectionStatus">
+                Connecting
             </span>
 
         </div>
@@ -46,149 +52,187 @@
     </header>
 
 
-    <main>
+    <!-- =============================== -->
+    <!-- CONNECTING VIEW                  -->
+    <!-- =============================== -->
 
-        <section
-            id="connectingView"
-            class="connecting-view"
-        >
+    <main
+        id="connectingView"
+        class="view connecting-view"
+    >
 
-            <div class="loader"></div>
+        <div class="loader"></div>
 
-            <h1>
-                Connecting to laptop
-            </h1>
+        <h2>
+            Connecting to laptop
+        </h2>
 
-            <p>
-                Waiting for your laptop to register...
-            </p>
+        <p>
+            Waiting for your laptop to register...
+        </p>
 
-        </section>
-
-
-        <section
-            id="controlView"
-            class="control-view hidden"
-        >
-
-            <div class="action-card">
-
-                <h2>
-                    Screen
-                </h2>
-
-                <p class="section-description">
-                    Capture the current laptop screen.
-                </p>
+    </main>
 
 
-                <button
-                    id="screenshotButton"
-                    class="primary-button screenshot-button"
-                    onclick="takeScreenshot()"
-                >
+    <!-- =============================== -->
+    <!-- CONTROL VIEW                     -->
+    <!-- =============================== -->
 
-                    <span>
-                        Take Screenshot
-                    </span>
+    <main
+        id="controlView"
+        class="view hidden"
+    >
 
-                </button>
+        <!-- SCREENSHOT -->
 
+        <section class="section">
 
-                <div
-                    id="screenshotResult"
-                    class="screenshot-result"
-                ></div>
+            <div class="section-header">
 
+                <div>
 
-                <div
-                    id="aiSection"
-                    class="ai-section hidden"
-                >
-
-                    <h3>
-                        ChatGPT Click Instructions
-                    </h3>
-
-                    <p class="section-description">
-                        Attach the screenshot to ChatGPT and ask it to return the click JSON. Paste the JSON below.
-                    </p>
-
-
-                    <textarea
-                        id="clickJson"
-                        class="json-input"
-                        placeholder='Paste ChatGPT JSON here...'
-                        rows="9"
-                    ></textarea>
-
-
-                    <button
-                        id="executeClicksButton"
-                        class="primary-button"
-                        onclick="executeClicks()"
-                    >
-                        Execute Clicks
-                    </button>
-
+                    <h2>
+                        Screen
+                    </h2>
 
                     <p
-                        id="clickResult"
-                        class="result"
+                        id="deviceInfo"
+                        class="muted"
                     ></p>
 
                 </div>
 
+                <button
+                    id="screenshotButton"
+                    class="primary-button"
+                    onclick="takeScreenshot()"
+                >
+                    Take Screenshot
+                </button>
+
             </div>
 
 
-            <div class="action-card">
+            <div
+                id="screenshotContainer"
+                class="screenshot-container"
+            >
 
-                <h2>
-                    Type Text
-                </h2>
+                <div class="empty-state">
 
-                <p class="section-description">
-                    Enter text to type on the laptop.
+                    <p>
+                        No screenshot captured yet.
+                    </p>
+
+                    <p class="muted">
+                        Press "Take Screenshot".
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- AI CLICK CONTROL -->
+
+            <div
+                id="aiClickSection"
+                class="ai-click-section hidden"
+            >
+
+                <h3>
+                    Execute ChatGPT Clicks
+                </h3>
+
+                <p class="muted">
+                    Give the screenshot to ChatGPT,
+                    then paste its normalized JSON here.
                 </p>
 
 
                 <textarea
-                    id="typeText"
-                    placeholder="Enter text to type..."
-                    rows="8"
+                    id="clickJson"
+                    class="click-json"
+                    placeholder='{
+  "steps": [
+    {
+      "action": "click",
+      "target": "Java",
+      "confidence": 0.99,
+      "point": {
+        "x": 366,
+        "y": 347
+      }
+    }
+  ]
+}'
+                    rows="10"
                 ></textarea>
 
 
-                <div class="typing-buttons">
-
-                    <button
-                        id="typeButton"
-                        class="primary-button"
-                        onclick="sendTyping()"
-                    >
-                        Start Typing
-                    </button>
-
-
-                    <button
-                        id="stopButton"
-                        class="secondary-button"
-                        onclick="stopTyping()"
-                        disabled
-                    >
-                        Stop Typing
-                    </button>
-
-                </div>
+                <button
+                    id="executeClickButton"
+                    class="primary-button"
+                    onclick="executeClicks()"
+                >
+                    Execute Clicks
+                </button>
 
 
                 <p
-                    id="typeResult"
+                    id="clickResult"
                     class="result"
                 ></p>
 
             </div>
+
+        </section>
+
+
+        <!-- TYPING -->
+
+        <section class="section">
+
+            <h2>
+                Typing
+            </h2>
+
+
+            <textarea
+                id="typeText"
+                class="type-text"
+                placeholder="Enter text to type on the laptop..."
+                rows="6"
+            ></textarea>
+
+
+            <div class="typing-buttons">
+
+                <button
+                    id="typeButton"
+                    class="primary-button"
+                    onclick="startTyping()"
+                >
+                    Start Typing
+                </button>
+
+
+                <button
+                    id="stopButton"
+                    class="secondary-button"
+                    onclick="stopTyping()"
+                    disabled
+                >
+                    Stop Typing
+                </button>
+
+            </div>
+
+
+            <p
+                id="typeResult"
+                class="result"
+            ></p>
 
         </section>
 
@@ -198,7 +242,7 @@
 
 
 <script
-    src="{{ url_for('static', filename='js/app.js') }}"
+    src="/static/js/app.js?v=3"
 ></script>
 
 </body>

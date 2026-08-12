@@ -1,444 +1,317 @@
-let activeTypingDevice = null;
+let connectedDevice = null;
+
+let polling = false;
+
+let activeTyping = false;
 
 
-async function loadPhoneInfo() {
+/* ========================================= */
+/* INITIALIZATION                            */
+/* ========================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        checkConnection();
+
+        setInterval(
+            checkConnection,
+            2000
+        );
+
+    }
+);
+
+
+/* ========================================= */
+/* CONNECTION                                */
+/* ========================================= */
+
+async function checkConnection() {
+
+    if (polling) {
+
+        return;
+
+    }
+
+
+    polling = true;
+
 
     try {
 
         const response =
             await fetch(
-                "/status"
+                "/devices",
+                {
+                    cache: "no-store"
+                }
             );
 
 
-        const data =
-            await response.json();
+        if (!response.ok) {
 
-
-        if (data.success) {
-
-            document.getElementById(
-                "phoneInfo"
-            ).textContent =
-                `Phone: ${data.ip}:${data.port}`;
+            throw new Error(
+                "Server returned an error."
+            );
 
         }
 
 
-    } catch (error) {
-
-        document.getElementById(
-            "phoneInfo"
-        ).textContent =
-            "Phone server information unavailable.";
-
-    }
-
-}
-
-
-async function loadDevices() {
-
-    try {
-
-        const response =
-            await fetch(
-                "/devices"
-            );
-
-
         const data =
             await response.json();
 
 
-        if (!data.success) {
+        if (
+            !data.success
+            ||
+            !Array.isArray(
+                data.devices
+            )
+        ) {
 
-            showDeviceMessage(
-                "Failed to load devices.",
-                "error"
-            );
-
+            showDisconnected();
 
             return;
 
         }
 
 
-        updateDevices(
-            data.devices
-        );
+        const device =
+            data.devices.find(
+                function (item) {
+
+                    return item.online === true;
+
+                }
+            );
+
+
+        if (device) {
+
+            showConnected(
+                device
+            );
+
+        } else {
+
+            showDisconnected();
+
+        }
 
 
     } catch (error) {
 
-        showDeviceMessage(
-            "Unable to contact server.",
-            "error"
-        );
+        showDisconnected();
+
+    } finally {
+
+        polling = false;
 
     }
 
 }
 
 
-function updateDevices(
-    devices
+/* ========================================= */
+/* CONNECTED                                 */
+/* ========================================= */
+
+function showConnected(
+    device
 ) {
 
-    const container =
+    connectedDevice =
+        device;
+
+
+    const connectingView =
         document.getElementById(
-            "devices"
+            "connectingView"
         );
 
 
-    const existing =
-        new Map();
-
-
-    container
-        .querySelectorAll(
-            ".device"
-        )
-        .forEach(
-            element => {
-
-                existing.set(
-
-                    element.dataset.deviceName,
-
-                    element
-
-                );
-
-            }
+    const controlView =
+        document.getElementById(
+            "controlView"
         );
 
 
-    if (
-        devices.length === 0
-    ) {
-
-        if (
-            !container.querySelector(
-                ".no-devices"
-            )
-        ) {
-
-            container.innerHTML =
-                '<p class="muted no-devices">No laptops connected.</p>';
-
-        }
-
-
-        return;
-
-    }
-
-
-    const emptyMessage =
-        container.querySelector(
-            ".no-devices"
+    const indicator =
+        document.getElementById(
+            "connectionIndicator"
         );
-
-
-    if (emptyMessage) {
-
-        emptyMessage.remove();
-
-    }
-
-
-    const currentNames =
-        new Set();
-
-
-    devices.forEach(
-        device => {
-
-            currentNames.add(
-                device.name
-            );
-
-
-            let element =
-                existing.get(
-                    device.name
-                );
-
-
-            if (!element) {
-
-                element =
-                    createDeviceElement(
-                        device
-                    );
-
-
-                container.appendChild(
-                    element
-                );
-
-            }
-
-
-            updateDeviceElement(
-                element,
-                device
-            );
-
-        }
-    );
-
-
-    existing.forEach(
-        (
-            element,
-            name
-        ) => {
-
-            if (
-                !currentNames.has(
-                    name
-                )
-            ) {
-
-                element.remove();
-
-            }
-
-        }
-    );
-
-}
-
-
-function createDeviceElement(
-    device
-) {
-
-    const div =
-        document.createElement(
-            "div"
-        );
-
-
-    div.className =
-        "device";
-
-
-    div.dataset.deviceName =
-        device.name;
-
-
-    div.innerHTML = `
-
-        <div class="device-name"></div>
-
-        <div class="device-ip"></div>
-
-        <div class="status"></div>
-
-        <div class="device-controls"></div>
-
-        <div class="screenshot-container"></div>
-
-        <div class="ai-click-section hidden">
-
-            <h3>
-                ChatGPT Click Instructions
-            </h3>
-
-            <p class="muted">
-                Give the screenshot to ChatGPT,
-                then paste its normalized JSON here.
-            </p>
-
-            <textarea
-                class="click-json"
-                placeholder='Paste ChatGPT JSON here...'
-                rows="8"
-            ></textarea>
-
-            <button
-                class="execute-click-button"
-                onclick="executeClicks(this)"
-            >
-                Execute Clicks
-            </button>
-
-            <p class="click-result"></p>
-
-        </div>
-
-    `;
-
-
-    return div;
-
-}
-
-
-function updateDeviceElement(
-    element,
-    device
-) {
-
-    element.querySelector(
-        ".device-name"
-    ).textContent =
-        device.name;
-
-
-    element.querySelector(
-        ".device-ip"
-    ).textContent =
-        `${device.ip}:${device.port}`;
 
 
     const status =
-        element.querySelector(
-            ".status"
+        document.getElementById(
+            "connectionStatus"
         );
+
+
+    const connectionText =
+        document.getElementById(
+            "connectionText"
+        );
+
+
+    const deviceInfo =
+        document.getElementById(
+            "deviceInfo"
+        );
+
+
+    connectingView.classList.add(
+        "hidden"
+    );
+
+
+    controlView.classList.remove(
+        "hidden"
+    );
+
+
+    indicator.className =
+        "connection-indicator connected";
 
 
     status.textContent =
-        device.online
-        ? "ONLINE"
-        : "OFFLINE";
+        "Connected";
 
 
-    status.className =
-        device.online
-        ? "status online"
-        : "status offline";
+    connectionText.textContent =
+        "Laptop connected";
 
 
-    const controls =
-        element.querySelector(
-            ".device-controls"
-        );
-
-
-    if (device.online) {
-
-        controls.innerHTML = `
-
-            <button
-                class="capture-button"
-                onclick="takeScreenshot(
-                    '${escapeHtml(
-                        device.name
-                    )}'
-                )"
-            >
-                Take Screenshot
-            </button>
-
-        `;
-
-
-    } else {
-
-        controls.innerHTML = "";
-
-
-        if (
-            activeTypingDevice
-            === device.name
-        ) {
-
-            activeTypingDevice = null;
-
-        }
-
-
-        const aiSection =
-            element.querySelector(
-                ".ai-click-section"
-            );
-
-
-        if (aiSection) {
-
-            aiSection.classList.add(
-                "hidden"
-            );
-
-        }
-
-    }
+    deviceInfo.textContent =
+        `${device.ip}:${device.port}`;
 
 }
 
 
-function showDeviceMessage(
-    message,
-    className
-) {
+/* ========================================= */
+/* DISCONNECTED                              */
+/* ========================================= */
+
+function showDisconnected() {
+
+    connectedDevice =
+        null;
+
+
+    const connectingView =
+        document.getElementById(
+            "connectingView"
+        );
+
+
+    const controlView =
+        document.getElementById(
+            "controlView"
+        );
+
+
+    const indicator =
+        document.getElementById(
+            "connectionIndicator"
+        );
+
+
+    const status =
+        document.getElementById(
+            "connectionStatus"
+        );
+
+
+    const connectionText =
+        document.getElementById(
+            "connectionText"
+        );
+
+
+    connectingView.classList.remove(
+        "hidden"
+    );
+
+
+    controlView.classList.add(
+        "hidden"
+    );
+
+
+    indicator.className =
+        "connection-indicator connecting";
+
+
+    status.textContent =
+        "Connecting";
+
+
+    connectionText.textContent =
+        "Connecting...";
+
+}
+
+
+/* ========================================= */
+/* SCREENSHOT                                */
+/* ========================================= */
+
+async function takeScreenshot() {
+
+    if (!connectedDevice) {
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "screenshotButton"
+        );
+
 
     const container =
         document.getElementById(
-            "devices"
-        );
-
-
-    if (
-        container.querySelector(
-            ".device"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    container.innerHTML =
-        `<p class="${className}">
-            ${escapeHtml(message)}
-        </p>`;
-
-}
-
-
-async function takeScreenshot(
-    deviceName
-) {
-
-    const element =
-        document.querySelector(
-            `.device[data-device-name="${cssEscape(
-                deviceName
-            )}"]`
-        );
-
-
-    if (!element) {
-
-        return;
-
-    }
-
-
-    const container =
-        element.querySelector(
-            ".screenshot-container"
+            "screenshotContainer"
         );
 
 
     const aiSection =
-        element.querySelector(
-            ".ai-click-section"
+        document.getElementById(
+            "aiClickSection"
         );
 
 
-    container.innerHTML =
-        '<p class="muted">Capturing screenshot...</p>';
+    button.disabled =
+        true;
+
+
+    button.textContent =
+        "Capturing...";
 
 
     aiSection.classList.add(
         "hidden"
     );
+
+
+    container.innerHTML = `
+
+        <div class="loading-state">
+
+            <div class="loader small"></div>
+
+            <p>
+                Capturing screenshot...
+            </p>
+
+        </div>
+
+    `;
 
 
     try {
@@ -448,8 +321,14 @@ async function takeScreenshot(
 
                 "/screenshot/" +
                 encodeURIComponent(
-                    deviceName
-                )
+                    connectedDevice.name
+                ) +
+                "?t=" +
+                Date.now(),
+
+                {
+                    cache: "no-store"
+                }
 
             );
 
@@ -534,8 +413,15 @@ async function takeScreenshot(
                 );
 
 
-                container.innerHTML =
-                    '<p class="error">Unable to display screenshot.</p>';
+                container.innerHTML = `
+
+                    <div class="error-state">
+
+                        Unable to display screenshot.
+
+                    </div>
+
+                `;
 
             };
 
@@ -557,49 +443,60 @@ async function takeScreenshot(
 
         container.innerHTML = `
 
-            <p class="error">
+            <div class="error-state">
+
                 ${escapeHtml(
                     error.message
+                    ||
+                    "Screenshot failed."
                 )}
-            </p>
+
+            </div>
 
         `;
+
+    } finally {
+
+        button.disabled =
+            false;
+
+
+        button.textContent =
+            "Take Screenshot";
 
     }
 
 }
 
 
-async function executeClicks(
-    button
-) {
+/* ========================================= */
+/* CHATGPT CLICK EXECUTION                   */
+/* ========================================= */
 
-    const deviceElement =
-        button.closest(
-            ".device"
-        );
+async function executeClicks() {
 
-
-    if (!deviceElement) {
+    if (!connectedDevice) {
 
         return;
 
     }
 
 
-    const deviceName =
-        deviceElement.dataset.deviceName;
-
-
     const input =
-        deviceElement.querySelector(
-            ".click-json"
+        document.getElementById(
+            "clickJson"
+        );
+
+
+    const button =
+        document.getElementById(
+            "executeClickButton"
         );
 
 
     const result =
-        deviceElement.querySelector(
-            ".click-result"
+        document.getElementById(
+            "clickResult"
         );
 
 
@@ -609,12 +506,15 @@ async function executeClicks(
 
     if (!raw) {
 
-        result.className =
-            "error";
+        showResult(
 
+            result,
 
-        result.textContent =
-            "Paste the ChatGPT JSON first.";
+            "Paste the ChatGPT JSON first.",
+
+            "error"
+
+        );
 
 
         return;
@@ -632,15 +532,17 @@ async function executeClicks(
                 raw
             );
 
+    } catch {
 
-    } catch (error) {
+        showResult(
 
-        result.className =
-            "error";
+            result,
 
+            "Invalid JSON.",
 
-        result.textContent =
-            "Invalid JSON.";
+            "error"
+
+        );
 
 
         return;
@@ -656,12 +558,15 @@ async function executeClicks(
         )
     ) {
 
-        result.className =
-            "error";
+        showResult(
 
+            result,
 
-        result.textContent =
-            "JSON must contain a steps array.";
+            "JSON must contain a steps array.",
+
+            "error"
+
+        );
 
 
         return;
@@ -673,12 +578,15 @@ async function executeClicks(
         data.steps.length === 0
     ) {
 
-        result.className =
-            "error";
+        showResult(
 
+            result,
 
-        result.textContent =
-            "No click steps found.";
+            "No click steps found.",
+
+            "error"
+
+        );
 
 
         return;
@@ -690,12 +598,15 @@ async function executeClicks(
         data.steps.length > 6
     ) {
 
-        result.className =
-            "error";
+        showResult(
 
+            result,
 
-        result.textContent =
-            "Maximum 6 click steps allowed.";
+            "Maximum 6 click steps allowed.",
+
+            "error"
+
+        );
 
 
         return;
@@ -714,12 +625,15 @@ async function executeClicks(
             step.action !== "click"
         ) {
 
-            result.className =
-                "error";
+            showResult(
 
+                result,
 
-            result.textContent =
-                "Every step must use action: click.";
+                "Every step must use action: click.",
+
+                "error"
+
+            );
 
 
             return;
@@ -735,12 +649,15 @@ async function executeClicks(
             typeof step.point.y !== "number"
         ) {
 
-            result.className =
-                "error";
+            showResult(
 
+                result,
 
-            result.textContent =
-                "Every step needs a normalized point.";
+                "Every step needs a normalized point.",
+
+                "error"
+
+            );
 
 
             return;
@@ -760,12 +677,15 @@ async function executeClicks(
 
         ) {
 
-            result.className =
-                "error";
+            showResult(
 
+                result,
 
-            result.textContent =
-                "Coordinates must be between 0 and 1000.";
+                "Coordinates must be between 0 and 1000.",
+
+                "error"
+
+            );
 
 
             return;
@@ -779,12 +699,19 @@ async function executeClicks(
         true;
 
 
-    result.className =
-        "muted";
+    button.textContent =
+        "Executing...";
 
 
-    result.textContent =
-        "Executing clicks...";
+    showResult(
+
+        result,
+
+        "Executing clicks...",
+
+        "muted"
+
+    );
 
 
     try {
@@ -794,7 +721,7 @@ async function executeClicks(
 
                 "/click/" +
                 encodeURIComponent(
-                    deviceName
+                    connectedDevice.name
                 ),
 
                 {
@@ -824,6 +751,8 @@ async function executeClicks(
 
 
         if (
+            !response.ok
+            ||
             !responseData.success
         ) {
 
@@ -838,170 +767,59 @@ async function executeClicks(
         }
 
 
-        result.className =
-            "success";
+        showResult(
 
+            result,
 
-        result.textContent =
             `Executed ${
                 responseData.executed || 0
-            } click(s).`;
+            } click(s).`,
+
+            "success"
+
+        );
 
 
     } catch (error) {
 
-        result.className =
-            "error";
+        showResult(
 
+            result,
 
-        result.textContent =
             error.message
             ||
-            "Unable to execute clicks.";
+            "Unable to execute clicks.",
 
+            "error"
+
+        );
 
     } finally {
 
         button.disabled =
             false;
 
+
+        button.textContent =
+            "Execute Clicks";
+
     }
 
 }
 
 
-async function manualConnect() {
+/* ========================================= */
+/* TYPING                                    */
+/* ========================================= */
 
-    const ip =
-        document.getElementById(
-            "manualIp"
-        ).value.trim();
+async function startTyping() {
 
-
-    const port =
-        document.getElementById(
-            "manualPort"
-        ).value.trim();
-
-
-    const result =
-        document.getElementById(
-            "manualResult"
-        );
-
-
-    if (!ip) {
-
-        result.className =
-            "error";
-
-
-        result.textContent =
-            "Enter a laptop IP address.";
-
+    if (!connectedDevice) {
 
         return;
 
     }
 
-
-    result.className =
-        "muted";
-
-
-    result.textContent =
-        "Checking laptop...";
-
-
-    try {
-
-        const response =
-            await fetch(
-
-                "/probe",
-
-                {
-
-                    method:
-                        "POST",
-
-                    headers: {
-
-                        "Content-Type":
-                            "application/json"
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            ip:
-                                ip,
-
-                            port:
-                                parseInt(
-                                    port || "5001"
-                                )
-
-                        })
-
-                }
-
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!data.success) {
-
-            result.className =
-                "error";
-
-
-            result.textContent =
-                data.message
-                ||
-                "Unable to connect.";
-
-
-            return;
-
-        }
-
-
-        result.className =
-            "success";
-
-
-        result.textContent =
-            `${data.device.name} connected successfully.`;
-
-
-        document.getElementById(
-            "manualIp"
-        ).value = "";
-
-
-        await loadDevices();
-
-
-    } catch (error) {
-
-        result.className =
-            "error";
-
-
-        result.textContent =
-            "Connection failed.";
-
-    }
-
-}
-
-
-async function sendTyping() {
 
     const text =
         document.getElementById(
@@ -1015,7 +833,7 @@ async function sendTyping() {
         );
 
 
-    const typeButton =
+    const startButton =
         document.getElementById(
             "typeButton"
         );
@@ -1029,12 +847,15 @@ async function sendTyping() {
 
     if (!text.trim()) {
 
-        result.className =
-            "error";
+        showResult(
 
+            result,
 
-        result.textContent =
-            "Enter some text first.";
+            "Enter some text first.",
+
+            "error"
+
+        );
 
 
         return;
@@ -1042,67 +863,29 @@ async function sendTyping() {
     }
 
 
-    result.className =
-        "muted";
-
-
-    result.textContent =
-        "Starting typing...";
-
-
-    typeButton.disabled =
+    startButton.disabled =
         true;
 
 
-    stopButton.disabled =
-        true;
+    showResult(
+
+        result,
+
+        "Starting typing...",
+
+        "muted"
+
+    );
 
 
     try {
-
-        const devicesResponse =
-            await fetch(
-                "/devices"
-            );
-
-
-        const devicesData =
-            await devicesResponse.json();
-
-
-        if (!devicesData.success) {
-
-            throw new Error(
-                "Failed to load devices."
-            );
-
-        }
-
-
-        const onlineDevice =
-            devicesData.devices.find(
-
-                device =>
-                    device.online
-
-            );
-
-
-        if (!onlineDevice) {
-
-            throw new Error(
-                "No laptop is online."
-            );
-
-        }
-
 
         const response =
             await fetch(
 
                 "/type/" +
                 encodeURIComponent(
-                    onlineDevice.name
+                    connectedDevice.name
                 ),
 
                 {
@@ -1134,7 +917,11 @@ async function sendTyping() {
             await response.json();
 
 
-        if (!data.success) {
+        if (
+            !response.ok
+            ||
+            !data.success
+        ) {
 
             throw new Error(
 
@@ -1147,47 +934,64 @@ async function sendTyping() {
         }
 
 
-        activeTypingDevice =
-            onlineDevice.name;
-
-
-        result.className =
-            "success";
-
-
-        result.textContent =
-            "Typing started.";
+        activeTyping =
+            true;
 
 
         stopButton.disabled =
             false;
+
+
+        showResult(
+
+            result,
+
+            "Typing started.",
+
+            "success"
+
+        );
 
 
     } catch (error) {
 
-        result.className =
-            "error";
-
-
-        result.textContent =
-            error.message
-            ||
-            "Unable to start typing.";
-
-
-        typeButton.disabled =
+        startButton.disabled =
             false;
 
 
-        stopButton.disabled =
-            true;
+        showResult(
+
+            result,
+
+            error.message
+            ||
+            "Unable to start typing.",
+
+            "error"
+
+        );
 
     }
 
 }
 
 
+/* ========================================= */
+/* STOP TYPING                               */
+/* ========================================= */
+
 async function stopTyping() {
+
+    if (
+        !connectedDevice
+        ||
+        !activeTyping
+    ) {
+
+        return;
+
+    }
+
 
     const result =
         document.getElementById(
@@ -1195,7 +999,7 @@ async function stopTyping() {
         );
 
 
-    const typeButton =
+    const startButton =
         document.getElementById(
             "typeButton"
         );
@@ -1207,31 +1011,19 @@ async function stopTyping() {
         );
 
 
-    if (!activeTypingDevice) {
-
-        result.className =
-            "error";
-
-
-        result.textContent =
-            "No typing operation is active.";
-
-
-        return;
-
-    }
-
-
     stopButton.disabled =
         true;
 
 
-    result.className =
-        "muted";
+    showResult(
 
+        result,
 
-    result.textContent =
-        "Stopping typing...";
+        "Stopping typing...",
+
+        "muted"
+
+    );
 
 
     try {
@@ -1241,7 +1033,7 @@ async function stopTyping() {
 
                 "/stop-type/" +
                 encodeURIComponent(
-                    activeTypingDevice
+                    connectedDevice.name
                 ),
 
                 {
@@ -1258,7 +1050,11 @@ async function stopTyping() {
             await response.json();
 
 
-        if (!data.success) {
+        if (
+            !response.ok
+            ||
+            !data.success
+        ) {
 
             throw new Error(
 
@@ -1271,42 +1067,64 @@ async function stopTyping() {
         }
 
 
-        result.className =
-            "success";
-
-
-        result.textContent =
-            "Typing stopped.";
-
-
-        activeTypingDevice =
-            null;
-
-
-        typeButton.disabled =
+        activeTyping =
             false;
 
 
-        stopButton.disabled =
-            true;
+        startButton.disabled =
+            false;
+
+
+        showResult(
+
+            result,
+
+            "Typing stopped.",
+
+            "success"
+
+        );
 
 
     } catch (error) {
 
-        result.className =
-            "error";
-
-
-        result.textContent =
-            error.message
-            ||
-            "Unable to stop typing.";
-
-
         stopButton.disabled =
             false;
 
+
+        showResult(
+
+            result,
+
+            error.message
+            ||
+            "Unable to stop typing.",
+
+            "error"
+
+        );
+
     }
+
+}
+
+
+/* ========================================= */
+/* HELPERS                                   */
+/* ========================================= */
+
+function showResult(
+    element,
+    message,
+    type
+) {
+
+    element.className =
+        `result ${type}`;
+
+
+    element.textContent =
+        message;
 
 }
 
@@ -1343,46 +1161,3 @@ function escapeHtml(
         );
 
 }
-
-
-function cssEscape(
-    value
-) {
-
-    if (
-
-        window.CSS
-
-        &&
-
-        typeof window.CSS.escape
-        === "function"
-
-    ) {
-
-        return window.CSS.escape(
-            value
-        );
-
-    }
-
-
-    return String(value)
-        .replace(
-            /([^\w-])/g,
-            "\\$1"
-        );
-
-}
-
-
-loadPhoneInfo();
-
-
-loadDevices();
-
-
-setInterval(
-    loadDevices,
-    5000
-);
