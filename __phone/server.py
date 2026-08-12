@@ -31,6 +31,10 @@ from screenshot_manager import (
 app = Flask(__name__)
 
 
+# =========================================
+# PATHS
+# =========================================
+
 BASE_DIR = os.path.dirname(
     os.path.abspath(__file__)
 )
@@ -43,28 +47,26 @@ PROMPT_DIRECTORY = os.path.join(
 
 PROMPT_FILES = {
 
-    "click":
-        "click.txt",
+    "click": "click.txt",
 
-    "python":
-        "python.txt",
+    "python": "python.txt",
 
-    "sql":
-        "sql.txt",
+    "sql": "sql.txt",
 
-    "fill_blank":
-        "fill_blank.txt",
+    "fill_blank": "fill_blank.txt",
 
-    "email":
-        "email.txt",
+    "email": "email.txt",
 
-    "general":
-        "general.txt",
+    "general": "general.txt",
 
-    "custom":
-        "custom.txt"
+    "custom": "custom.txt"
+
 }
 
+
+# =========================================
+# CONFIG
+# =========================================
 
 config = load_config()
 
@@ -84,15 +86,17 @@ SCREENSHOT_DIRECTORY = (
 )
 
 
+# =========================================
+# MANAGERS
+# =========================================
+
 device_manager = DeviceManager(
     HEARTBEAT_TIMEOUT
 )
 
 
-screenshot_manager = (
-    ScreenshotManager(
-        SCREENSHOT_DIRECTORY
-    )
+screenshot_manager = ScreenshotManager(
+    SCREENSHOT_DIRECTORY
 )
 
 
@@ -154,10 +158,8 @@ def status():
 )
 def get_prompt(prompt_name):
 
-    filename = (
-        PROMPT_FILES.get(
-            prompt_name
-        )
+    filename = PROMPT_FILES.get(
+        prompt_name
     )
 
     if not filename:
@@ -182,8 +184,7 @@ def get_prompt(prompt_name):
     if not os.path.isfile(path):
 
         log_error(
-            f"Prompt file missing -> "
-            f"{path}"
+            f"Prompt file missing -> {path}"
         )
 
         return jsonify({
@@ -203,9 +204,9 @@ def get_prompt(prompt_name):
             path,
             "r",
             encoding="utf-8"
-        ) as f:
+        ) as file:
 
-            content = f.read()
+            content = file.read()
 
 
         return Response(
@@ -274,22 +275,19 @@ def register():
             }), 400
 
 
-        device_name =
-            data.get(
-                "device_name"
-            )
+        device_name = data.get(
+            "device_name"
+        )
 
 
-        ip =
-            data.get(
-                "ip"
-            )
+        ip = data.get(
+            "ip"
+        )
 
 
-        port =
-            data.get(
-                "port"
-            )
+        port = data.get(
+            "port"
+        )
 
 
         if not device_name:
@@ -399,22 +397,19 @@ def heartbeat():
             }), 400
 
 
-        device_name =
-            data.get(
-                "device_name"
-            )
+        device_name = data.get(
+            "device_name"
+        )
 
 
-        ip =
-            data.get(
-                "ip"
-            )
+        ip = data.get(
+            "ip"
+        )
 
 
-        port =
-            data.get(
-                "port"
-            )
+        port = data.get(
+            "port"
+        )
 
 
         if not device_name:
@@ -430,19 +425,23 @@ def heartbeat():
             }), 400
 
 
-        updated =
-            device_manager.heartbeat(
+        updated = device_manager.heartbeat(
 
-                device_name,
+            device_name,
 
-                ip,
+            ip,
 
-                port
+            port
 
-            )
+        )
 
 
         if not updated:
+
+            log(
+                f"Heartbeat from unknown "
+                f"device -> {device_name}"
+            )
 
             return jsonify({
 
@@ -515,10 +514,13 @@ def devices():
 )
 def probe():
 
+    log(
+        "Manual device probe requested"
+    )
+
     try:
 
-        data =
-            request.get_json()
+        data = request.get_json()
 
 
         if not data:
@@ -534,10 +536,9 @@ def probe():
             }), 400
 
 
-        ip =
-            data.get(
-                "ip"
-            )
+        ip = data.get(
+            "ip"
+        )
 
 
         if not ip:
@@ -570,14 +571,18 @@ def probe():
         import requests
 
 
-        response =
-            requests.get(
+        log(
+            f"Probing laptop -> {url}"
+        )
 
-                url,
 
-                timeout=5
+        response = requests.get(
 
-            )
+            url,
+
+            timeout=5
+
+        )
 
 
         if response.status_code != 200:
@@ -593,8 +598,7 @@ def probe():
             }), 400
 
 
-        laptop =
-            response.json()
+        laptop = response.json()
 
 
         if not laptop.get(
@@ -612,10 +616,9 @@ def probe():
             }), 400
 
 
-        device_name =
-            laptop.get(
-                "device_name"
-            )
+        device_name = laptop.get(
+            "device_name"
+        )
 
 
         if not device_name:
@@ -695,13 +698,26 @@ def probe():
 )
 def screenshot(device_name):
 
-    device =
-        device_manager.get_device(
-            device_name
-        )
+    log(
+        "Screenshot request received"
+    )
+
+    log(
+        f"Device -> {device_name}"
+    )
+
+
+    device = device_manager.get_device(
+        device_name
+    )
 
 
     if not device:
+
+        log(
+            "Screenshot failed: "
+            "device not found"
+        )
 
         return jsonify({
 
@@ -718,6 +734,11 @@ def screenshot(device_name):
         device
     ):
 
+        log(
+            "Screenshot failed: "
+            "device is offline"
+        )
+
         return jsonify({
 
             "success":
@@ -729,10 +750,9 @@ def screenshot(device_name):
         }), 503
 
 
-    result =
-        screenshot_manager.capture(
-            device
-        )
+    result = screenshot_manager.capture(
+        device
+    )
 
 
     if not result:
@@ -780,10 +800,18 @@ def screenshot(device_name):
 )
 def click_device(device_name):
 
-    device =
-        device_manager.get_device(
-            device_name
-        )
+    log(
+        "Click request received"
+    )
+
+    log(
+        f"Device -> {device_name}"
+    )
+
+
+    device = device_manager.get_device(
+        device_name
+    )
 
 
     if not device:
@@ -816,8 +844,7 @@ def click_device(device_name):
 
     try:
 
-        data =
-            request.get_json()
+        data = request.get_json()
 
 
         if not data:
@@ -833,10 +860,9 @@ def click_device(device_name):
             }), 400
 
 
-        steps =
-            data.get(
-                "steps"
-            )
+        steps = data.get(
+            "steps"
+        )
 
 
         if not isinstance(
@@ -914,10 +940,9 @@ def click_device(device_name):
                 }), 400
 
 
-            point =
-                step.get(
-                    "point"
-                )
+            point = step.get(
+                "point"
+            )
 
 
             if not isinstance(
@@ -936,16 +961,14 @@ def click_device(device_name):
                 }), 400
 
 
-            x =
-                point.get(
-                    "x"
-                )
+            x = point.get(
+                "x"
+            )
 
 
-            y =
-                point.get(
-                    "y"
-                )
+            y = point.get(
+                "y"
+            )
 
 
             if not isinstance(
@@ -1008,16 +1031,26 @@ def click_device(device_name):
         )
 
 
-        response =
-            requests.post(
+        log(
+            "Sending click request to laptop"
+        )
 
-                url,
 
-                json=data,
+        response = requests.post(
 
-                timeout=10
+            url,
 
-            )
+            json=data,
+
+            timeout=10
+
+        )
+
+
+        log(
+            f"Laptop click response -> "
+            f"{response.status_code}"
+        )
 
 
         return (
@@ -1027,10 +1060,8 @@ def click_device(device_name):
             response.status_code,
 
             {
-
                 "Content-Type":
                     "application/json"
-
             }
 
         )
@@ -1055,7 +1086,7 @@ def click_device(device_name):
 
 
 # =========================================
-# TYPING
+# TYPE
 # =========================================
 
 @app.route(
@@ -1064,10 +1095,18 @@ def click_device(device_name):
 )
 def type_device(device_name):
 
-    device =
-        device_manager.get_device(
-            device_name
-        )
+    log(
+        "Typing request received"
+    )
+
+    log(
+        f"Device -> {device_name}"
+    )
+
+
+    device = device_manager.get_device(
+        device_name
+    )
 
 
     if not device:
@@ -1100,8 +1139,7 @@ def type_device(device_name):
 
     try:
 
-        data =
-            request.get_json()
+        data = request.get_json()
 
 
         if not data:
@@ -1117,10 +1155,9 @@ def type_device(device_name):
             }), 400
 
 
-        text =
-            data.get(
-                "text"
-            )
+        text = data.get(
+            "text"
+        )
 
 
         if text is None:
@@ -1146,18 +1183,17 @@ def type_device(device_name):
         )
 
 
-        response =
-            requests.post(
+        response = requests.post(
 
-                url,
+            url,
 
-                json={
-                    "text": text
-                },
+            json={
+                "text": text
+            },
 
-                timeout=5
+            timeout=5
 
-            )
+        )
 
 
         return (
@@ -1167,10 +1203,8 @@ def type_device(device_name):
             response.status_code,
 
             {
-
                 "Content-Type":
                     "application/json"
-
             }
 
         )
@@ -1204,10 +1238,18 @@ def type_device(device_name):
 )
 def stop_type_device(device_name):
 
-    device =
-        device_manager.get_device(
-            device_name
-        )
+    log(
+        "Stop typing request received"
+    )
+
+    log(
+        f"Device -> {device_name}"
+    )
+
+
+    device = device_manager.get_device(
+        device_name
+    )
 
 
     if not device:
@@ -1250,14 +1292,13 @@ def stop_type_device(device_name):
         )
 
 
-        response =
-            requests.post(
+        response = requests.post(
 
-                url,
+            url,
 
-                timeout=5
+            timeout=5
 
-            )
+        )
 
 
         return (
@@ -1267,10 +1308,8 @@ def stop_type_device(device_name):
             response.status_code,
 
             {
-
                 "Content-Type":
                     "application/json"
-
             }
 
         )
@@ -1307,11 +1346,15 @@ def shutdown(
         "ScreenLink phone server shutting down"
     )
 
+    log(
+        "Goodbye."
+    )
+
     sys.exit(0)
 
 
 # =========================================
-# START
+# START SERVER
 # =========================================
 
 if __name__ == "__main__":
@@ -1320,6 +1363,7 @@ if __name__ == "__main__":
         signal.SIGINT,
         shutdown
     )
+
 
     signal.signal(
         signal.SIGTERM,
@@ -1333,15 +1377,48 @@ if __name__ == "__main__":
     )
 
 
-    phone_ip =
-        get_phone_ip()
+    phone_ip = get_phone_ip()
 
 
     print()
+
     print(
-        f"Phone IP : {phone_ip}"
+        f"Phone IP       : {phone_ip}"
     )
+
     print()
+
+
+    log(
+        "========================================"
+    )
+
+    log(
+        "ScreenLink phone server starting"
+    )
+
+    log(
+        f"Phone IP -> {phone_ip}"
+    )
+
+    log(
+        f"HTTP port -> {PORT}"
+    )
+
+    log(
+        f"Screenshot directory -> "
+        f"{SCREENSHOT_DIRECTORY}"
+    )
+
+    log(
+        f"Prompt directory -> "
+        f"{PROMPT_DIRECTORY}"
+    )
+
+    log(
+        f"Log file -> "
+        f"{get_log_file()}"
+    )
 
 
     try:
