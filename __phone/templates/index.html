@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/style.css?v=3"
+        href="/static/css/style.css?v=4"
     >
 
 </head>
@@ -170,6 +170,27 @@
                 ></textarea>
 
 
+                <div class="textbox-actions">
+
+                    <button
+                        type="button"
+                        class="small-button"
+                        onclick="pasteInto('clickJson')"
+                    >
+                        Paste
+                    </button>
+
+                    <button
+                        type="button"
+                        class="small-button"
+                        onclick="clearTextbox('clickJson')"
+                    >
+                        Clear
+                    </button>
+
+                </div>
+
+
                 <button
                     id="executeClickButton"
                     class="primary-button"
@@ -204,6 +225,27 @@
                 placeholder="Enter text to type on the laptop..."
                 rows="6"
             ></textarea>
+
+
+            <div class="textbox-actions">
+
+                <button
+                    type="button"
+                    class="small-button"
+                    onclick="pasteInto('typeText')"
+                >
+                    Paste
+                </button>
+
+                <button
+                    type="button"
+                    class="small-button"
+                    onclick="clearTextbox('typeText')"
+                >
+                    Clear
+                </button>
+
+            </div>
 
 
             <div class="typing-buttons">
@@ -242,7 +284,7 @@
 
 
 <script
-    src="/static/js/app.js?v=3"
+    src="/static/js/app.js?v=4"
 ></script>
 
 </body>

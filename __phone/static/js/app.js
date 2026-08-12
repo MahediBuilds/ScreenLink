@@ -256,6 +256,164 @@ function showDisconnected() {
 
 
 /* ========================================= */
+/* CLIPBOARD                                 */
+/* ========================================= */
+
+async function pasteInto(
+    elementId
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const text =
+            await navigator.clipboard.readText();
+
+
+        if (!text) {
+
+            return;
+
+        }
+
+
+        element.value =
+            text;
+
+
+        element.focus();
+
+
+    } catch (error) {
+
+        /*
+         * Clipboard access can be denied by
+         * the browser if permission has not
+         * been granted.
+         */
+
+        element.focus();
+
+
+        try {
+
+            const success =
+                document.execCommand(
+                    "paste"
+                );
+
+
+            if (!success) {
+
+                alert(
+                    "Clipboard access was blocked. Please paste manually."
+                );
+
+            }
+
+        } catch {
+
+            alert(
+                "Clipboard access was blocked. Please paste manually."
+            );
+
+        }
+
+    }
+
+}
+
+
+/* ========================================= */
+/* CLEAR TEXTBOX                             */
+/* ========================================= */
+
+function clearTextbox(
+    elementId
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    element.value = "";
+
+
+    element.focus();
+
+
+    if (
+        elementId === "clickJson"
+    ) {
+
+        const result =
+            document.getElementById(
+                "clickResult"
+            );
+
+
+        if (result) {
+
+            result.textContent =
+                "";
+
+
+            result.className =
+                "result";
+
+        }
+
+    }
+
+
+    if (
+        elementId === "typeText"
+    ) {
+
+        const result =
+            document.getElementById(
+                "typeResult"
+            );
+
+
+        if (result) {
+
+            result.textContent =
+                "";
+
+
+            result.className =
+                "result";
+
+        }
+
+    }
+
+}
+
+
+/* ========================================= */
 /* SCREENSHOT                                */
 /* ========================================= */
 

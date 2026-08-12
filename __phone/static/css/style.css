@@ -164,7 +164,7 @@ button:disabled {
 
 
 /* ========================================= */
-/* CONNECTING                                 */
+/* CONNECTING                                */
 /* ========================================= */
 
 .connecting-view {
@@ -327,8 +327,52 @@ button:disabled {
 
 
 .primary-button:not(:disabled):active,
-.secondary-button:not(:disabled):active {
+.secondary-button:not(:disabled):active,
+.small-button:not(:disabled):active {
     transform: scale(0.98);
+}
+
+
+/* ========================================= */
+/* TEXTBOX ACTIONS                           */
+/* ========================================= */
+
+.textbox-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    margin-top: 8px;
+
+    margin-bottom: 12px;
+}
+
+
+.small-button {
+    padding: 7px 13px;
+
+    border: 1px solid #303030;
+
+    border-radius: 7px;
+
+    background: #1b1b1b;
+
+    color: #d0d0d0;
+
+    font-size: 13px;
+
+    font-weight: 500;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
+}
+
+
+.small-button:hover {
+    background: #242424;
 }
 
 
@@ -393,7 +437,7 @@ button:disabled {
 
 
 /* ========================================= */
-/* CHATGPT CLICK SECTION                     */
+/* CHATGPT CLICK SECTION                    */
 /* ========================================= */
 
 .ai-click-section {
@@ -419,7 +463,7 @@ button:disabled {
 
     min-height: 190px;
 
-    margin: 14px 0 10px;
+    margin: 14px 0 0;
 
     padding: 13px;
 
@@ -462,7 +506,7 @@ button:disabled {
 
     min-height: 140px;
 
-    margin: 15px 0;
+    margin: 15px 0 0;
 
     padding: 13px;
 
@@ -586,6 +630,11 @@ button:disabled {
 
     .typing-buttons button {
         width: 100%;
+    }
+
+
+    .textbox-actions {
+        justify-content: flex-end;
     }
 
 }
