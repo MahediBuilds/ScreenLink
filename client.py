@@ -1,31 +1,18 @@
 import socket
 import threading
 import time
+import sys
 
-import requests
 import pyautogui
+import requests
 
 from flask import Flask, jsonify, send_file, request
 
 from config import load_config, save_config
-
-from logger import (
-    log,
-    log_error,
-    console,
-    console_error
-)
-
-from typer import (
-    type_text,
-    stop_typing
-)
-
+from logger import log, log_error, get_log_file
+from typer import type_text, stop_typing
 from network import get_local_ip
-
-from screenshot import (
-    capture_screen
-)
+from screenshot import capture_screen
 
 
 app = Flask(__name__)
@@ -65,7 +52,9 @@ typing_thread = None
 
 MAX_CLICK_STEPS = 6
 
-MIN_CONFIDENCE = 0.50
+NORMALIZED_MIN = 0
+
+NORMALIZED_MAX = 1000
 
 
 pyautogui.FAILSAFE = True
@@ -86,8 +75,9 @@ def check_phone():
         f"/status"
     )
 
+
     log(
-        f"Checking phone server -> {url}"
+        f"Checking ScreenLink phone -> {url}"
     )
 
 
@@ -102,12 +92,6 @@ def check_phone():
         )
 
 
-        log(
-            f"Phone status response -> "
-            f"{response.status_code}"
-        )
-
-
         if response.status_code == 200:
 
             data = response.json()
@@ -116,15 +100,15 @@ def check_phone():
             if data.get("success"):
 
                 log(
-                    "Phone server is available"
+                    "ScreenLink phone server found"
                 )
 
                 return True
 
 
         log(
-            "Phone responded but did not "
-            "identify as a ScreenLink server"
+            "Phone responded, but is not "
+            "a valid ScreenLink server"
         )
 
 
@@ -180,8 +164,8 @@ def ask_for_phone_ip():
 
         if not ip:
 
-            console_error(
-                "Phone IP cannot be empty."
+            print(
+                "IP address cannot be empty."
             )
 
             continue
@@ -237,17 +221,17 @@ def register():
 
 
     log(
-        "Registration attempt started"
+        "Registration attempt"
     )
 
 
     log(
-        f"Registration URL -> {url}"
+        f"Phone -> {url}"
     )
 
 
     log(
-        f"Device name -> {DEVICE_NAME}"
+        f"Device -> {DEVICE_NAME}"
     )
 
 
@@ -287,11 +271,6 @@ def register():
 
             log(
                 "Registration successful"
-            )
-
-
-            console(
-                "Laptop connected"
             )
 
 
@@ -366,23 +345,12 @@ def heartbeat():
         )
 
 
-        log(
-            f"Heartbeat response -> "
-            f"{response.status_code}"
-        )
-
-
         if response.status_code == 200:
 
             if not registered:
 
                 log(
-                    "Heartbeat restored registration"
-                )
-
-
-                console(
-                    "Laptop connected"
+                    "Heartbeat successful"
                 )
 
 
@@ -398,7 +366,8 @@ def heartbeat():
 
 
             log(
-                "Laptop is no longer registered"
+                "Laptop is not registered "
+                "with phone"
             )
 
 
@@ -423,7 +392,8 @@ def heartbeat():
 
 
         log(
-            "Heartbeat connection failed -> "
+            "Phone unavailable during "
+            "heartbeat -> "
             + str(e)
         )
 
@@ -434,6 +404,7 @@ def heartbeat():
 def heartbeat_loop():
 
     global running
+
     global registered
 
 
@@ -458,12 +429,7 @@ def heartbeat_loop():
 
                 log(
                     "Heartbeat lost. "
-                    "Waiting for phone."
-                )
-
-
-                console(
-                    "Laptop disconnected"
+                    "Waiting for phone..."
                 )
 
 
@@ -471,7 +437,7 @@ def heartbeat_loop():
 
             log(
                 "Attempting to reconnect "
-                "to phone"
+                "to phone..."
             )
 
 
@@ -525,6 +491,11 @@ def type_endpoint():
 
 
     log(
+        "========================================"
+    )
+
+
+    log(
         "Typing request received"
     )
 
@@ -540,12 +511,6 @@ def type_endpoint():
             typing_thread.is_alive()
 
         ):
-
-            log(
-                "Typing request rejected "
-                "because typing is already active"
-            )
-
 
             return jsonify({
 
@@ -606,8 +571,7 @@ def type_endpoint():
 
 
         log(
-            f"Typing text length -> "
-            f"{len(text)}"
+            f"Text length -> {len(text)}"
         )
 
 
@@ -626,11 +590,6 @@ def type_endpoint():
 
 
         log(
-            "Typing started"
-        )
-
-
-        console(
             "Typing started"
         )
 
@@ -660,7 +619,7 @@ def type_endpoint():
                 False,
 
             "message":
-                "Unable to start typing"
+                str(e)
 
         }), 500
 
@@ -683,11 +642,6 @@ def stop_type_endpoint():
 
         log(
             "Typing stop signal sent"
-        )
-
-
-        console(
-            "Typing stopped"
         )
 
 
@@ -716,7 +670,7 @@ def stop_type_endpoint():
                 False,
 
             "message":
-                "Unable to stop typing"
+                str(e)
 
         }), 500
 
@@ -727,20 +681,33 @@ def stop_type_endpoint():
 )
 def screenshot():
 
+    request_time = time.strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+
+    log(
+        "========================================"
+    )
+
+
     log(
         "Screenshot request received"
     )
 
 
-    result = (
-        capture_screen()
+    log(
+        f"Request time -> {request_time}"
     )
+
+
+    result = capture_screen()
 
 
     if not result:
 
         log(
-            "Screenshot capture failed"
+            "Screenshot request failed"
         )
 
 
@@ -758,8 +725,7 @@ def screenshot():
     try:
 
         log(
-            f"Sending screenshot -> "
-            f"{result['filename']}"
+            "Sending screenshot to phone"
         )
 
 
@@ -786,11 +752,6 @@ def screenshot():
         ] = result["filename"]
 
 
-        console(
-            "Screenshot captured"
-        )
-
-
         return response
 
 
@@ -808,7 +769,7 @@ def screenshot():
                 False,
 
             "message":
-                "Unable to send screenshot"
+                "Failed to send screenshot"
 
         }), 500
 
@@ -818,6 +779,11 @@ def screenshot():
     methods=["POST"]
 )
 def click_endpoint():
+
+    log(
+        "========================================"
+    )
+
 
     log(
         "Click execution request received"
@@ -833,7 +799,7 @@ def click_endpoint():
 
             log(
                 "Click request rejected: "
-                "missing JSON"
+                "missing JSON data"
             )
 
 
@@ -875,7 +841,13 @@ def click_endpoint():
             }), 400
 
 
-        if len(steps) == 0:
+        if not steps:
+
+            log(
+                "Click request rejected: "
+                "no steps"
+            )
+
 
             return jsonify({
 
@@ -903,7 +875,7 @@ def click_endpoint():
 
                 "message":
                     f"Maximum {MAX_CLICK_STEPS} "
-                    f"clicks allowed"
+                    f"click steps allowed"
 
             }), 400
 
@@ -914,14 +886,18 @@ def click_endpoint():
 
 
         log(
-            f"Current screen -> "
+            f"Actual screen size -> "
             f"{screen_width}x{screen_height}"
         )
 
 
         visited = set()
 
+
         executed = 0
+
+
+        skipped = 0
 
 
         for index, step in enumerate(
@@ -939,127 +915,88 @@ def click_endpoint():
                     "invalid step"
                 )
 
+
+                skipped += 1
+
+
                 continue
 
 
-            if step.get(
+            action = step.get(
                 "action"
-            ) != "click":
-
-                log(
-                    f"Step {index} skipped: "
-                    "unsupported action"
-                )
-
-                continue
-
-
-            confidence = step.get(
-                "confidence",
-                1.0
             )
 
 
-            try:
-
-                confidence = float(
-                    confidence
-                )
-
-            except (
-                TypeError,
-                ValueError
-            ):
+            if action != "click":
 
                 log(
                     f"Step {index} skipped: "
-                    "invalid confidence"
+                    f"unsupported action -> "
+                    f"{action}"
                 )
+
+
+                skipped += 1
+
 
                 continue
 
 
-            if not 0 <= confidence <= 1:
-
-                log(
-                    f"Step {index} skipped: "
-                    "confidence outside 0-1"
-                )
-
-                continue
-
-
-            if confidence < MIN_CONFIDENCE:
-
-                log(
-                    f"Step {index} skipped: "
-                    f"low confidence {confidence}"
-                )
-
-                continue
-
-
-            box = step.get(
-                "box"
+            point = step.get(
+                "point"
             )
 
 
             if not isinstance(
-                box,
+                point,
                 dict
             ):
 
                 log(
                     f"Step {index} skipped: "
-                    "missing box"
+                    "missing point"
                 )
+
+
+                skipped += 1
+
 
                 continue
 
 
-            required = (
+            if (
 
-                "x",
+                "x" not in point
 
-                "y",
+                or
 
-                "width",
+                "y" not in point
 
-                "height"
-
-            )
-
-
-            if not all(
-                key in box
-                for key in required
             ):
 
                 log(
                     f"Step {index} skipped: "
-                    "incomplete box"
+                    "point requires x and y"
                 )
+
+
+                skipped += 1
+
 
                 continue
 
 
             try:
 
-                box_x = float(
-                    box["x"]
+                normalized_x = float(
+                    point["x"]
                 )
 
-                box_y = float(
-                    box["y"]
+
+                normalized_y = float(
+                    point["y"]
                 )
 
-                box_width = float(
-                    box["width"]
-                )
-
-                box_height = float(
-                    box["height"]
-                )
 
             except (
                 TypeError,
@@ -1068,75 +1005,126 @@ def click_endpoint():
 
                 log(
                     f"Step {index} skipped: "
-                    "invalid box values"
+                    "invalid point values"
                 )
+
+
+                skipped += 1
+
 
                 continue
 
 
-            if (
-                box_width <= 0
-                or
-                box_height <= 0
+            if not (
+
+                NORMALIZED_MIN
+                <= normalized_x
+                <= NORMALIZED_MAX
+
             ):
 
                 log(
                     f"Step {index} skipped: "
-                    "invalid box dimensions"
+                    f"x outside 0-1000 -> "
+                    f"{normalized_x}"
                 )
+
+
+                skipped += 1
+
 
                 continue
 
 
-            center_x = int(
-                box_x
-                + box_width / 2
-            )
+            if not (
 
+                NORMALIZED_MIN
+                <= normalized_y
+                <= NORMALIZED_MAX
 
-            center_y = int(
-                box_y
-                + box_height / 2
-            )
-
-
-            if (
-                center_x < 0
-                or
-                center_x >= screen_width
-                or
-                center_y < 0
-                or
-                center_y >= screen_height
             ):
 
                 log(
                     f"Step {index} skipped: "
-                    f"coordinates outside screen "
-                    f"({center_x}, {center_y})"
+                    f"y outside 0-1000 -> "
+                    f"{normalized_y}"
                 )
+
+
+                skipped += 1
+
 
                 continue
 
 
-            point = (
-                center_x,
-                center_y
+            pixel_x = round(
+
+                (
+                    normalized_x
+                    / NORMALIZED_MAX
+                )
+                * screen_width
+
             )
 
 
-            if point in visited:
+            pixel_y = round(
+
+                (
+                    normalized_y
+                    / NORMALIZED_MAX
+                )
+                * screen_height
+
+            )
+
+
+            pixel_x = max(
+
+                0,
+
+                min(
+                    pixel_x,
+                    screen_width - 1
+                )
+
+            )
+
+
+            pixel_y = max(
+
+                0,
+
+                min(
+                    pixel_y,
+                    screen_height - 1
+                )
+
+            )
+
+
+            point_key = (
+                pixel_x,
+                pixel_y
+            )
+
+
+            if point_key in visited:
 
                 log(
                     f"Step {index} skipped: "
                     "duplicate click"
                 )
 
+
+                skipped += 1
+
+
                 continue
 
 
             visited.add(
-                point
+                point_key
             )
 
 
@@ -1146,19 +1134,42 @@ def click_endpoint():
             )
 
 
-            log(
-                f"Click step {index} -> "
-                f"{target} "
-                f"({center_x}, {center_y}) "
-                f"confidence={confidence:.2f}"
+            confidence = step.get(
+                "confidence"
             )
+
+
+            log(
+                f"Step {index} -> {target}"
+            )
+
+
+            log(
+                f"Normalized point -> "
+                f"({normalized_x}, "
+                f"{normalized_y})"
+            )
+
+
+            log(
+                f"Pixel point -> "
+                f"({pixel_x}, {pixel_y})"
+            )
+
+
+            if confidence is not None:
+
+                log(
+                    f"Confidence -> "
+                    f"{confidence}"
+                )
 
 
             pyautogui.moveTo(
 
-                center_x,
+                pixel_x,
 
-                center_y,
+                pixel_y,
 
                 duration=0.35
 
@@ -1183,12 +1194,8 @@ def click_endpoint():
 
         log(
             f"Click execution finished -> "
-            f"{executed} click(s)"
-        )
-
-
-        console(
-            f"Clicks executed: {executed}"
+            f"executed={executed}, "
+            f"skipped={skipped}"
         )
 
 
@@ -1201,7 +1208,16 @@ def click_endpoint():
                 "Click execution completed",
 
             "executed":
-                executed
+                executed,
+
+            "skipped":
+                skipped,
+
+            "screen_width":
+                screen_width,
+
+            "screen_height":
+                screen_height
 
         })
 
@@ -1210,11 +1226,6 @@ def click_endpoint():
 
         log(
             "PyAutoGUI failsafe triggered"
-        )
-
-
-        console_error(
-            "Mouse failsafe triggered."
         )
 
 
@@ -1237,11 +1248,6 @@ def click_endpoint():
         )
 
 
-        console_error(
-            "Unable to execute clicks."
-        )
-
-
         return jsonify({
 
             "success":
@@ -1256,7 +1262,7 @@ def click_endpoint():
 def start_server():
 
     log(
-        f"Laptop HTTP server starting "
+        f"Starting laptop HTTP server "
         f"on port {LAPTOP_PORT}"
     )
 
@@ -1269,9 +1275,7 @@ def start_server():
 
         debug=False,
 
-        use_reloader=False,
-
-        threaded=True
+        use_reloader=False
 
     )
 
@@ -1280,7 +1284,9 @@ def shutdown():
 
     global running
 
+
     running = False
+
 
     stop_typing()
 
@@ -1296,8 +1302,11 @@ def main():
 
 
     print()
+
     print("=" * 45)
+
     print("       SCREENLINK LAPTOP")
+
     print("=" * 45)
 
 
@@ -1370,6 +1379,14 @@ def main():
     )
 
 
+    log(
+        f"Log file -> {get_log_file()}"
+    )
+
+
+    print()
+
+
     while True:
 
         print(
@@ -1382,6 +1399,7 @@ def main():
             print(
                 "Phone found."
             )
+
 
             break
 
@@ -1425,10 +1443,19 @@ def main():
 
 
     print()
+
     print("=" * 45)
-    print("Registration successful.")
-    print("Status         : ONLINE")
+
+    print(
+        "Registration successful."
+    )
+
+    print(
+        "Status         : ONLINE"
+    )
+
     print("=" * 45)
+
     print()
 
 
@@ -1441,8 +1468,7 @@ def main():
 
         print()
 
-
-        console(
+        print(
             "Stopping ScreenLink..."
         )
 
@@ -1455,11 +1481,6 @@ def main():
         log_error(
             "Server crashed: "
             + str(e)
-        )
-
-
-        console_error(
-            "Laptop server stopped unexpectedly."
         )
 
 

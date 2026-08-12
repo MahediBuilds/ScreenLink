@@ -1,9 +1,3 @@
-import logging
-import signal
-import sys
-
-import requests
-
 from flask import (
     Flask,
     jsonify,
@@ -12,13 +6,15 @@ from flask import (
     Response
 )
 
+import signal
+import sys
+
 from config import load_config
 
 from logger import (
     log,
     log_error,
-    console,
-    console_error
+    get_log_file
 )
 
 from network import get_phone_ip
@@ -33,13 +29,6 @@ from screenshot_manager import (
 
 
 app = Flask(__name__)
-
-
-logging.getLogger(
-    "werkzeug"
-).setLevel(
-    logging.ERROR
-)
 
 
 config = load_config()
@@ -82,6 +71,7 @@ def index():
         "Web interface opened"
     )
 
+
     return render_template(
         "index.html"
     )
@@ -94,8 +84,9 @@ def index():
 def status():
 
     log(
-        "Phone status requested"
+        "Phone server status requested"
     )
+
 
     return jsonify({
 
@@ -124,7 +115,7 @@ def status():
 def register():
 
     log(
-        "Laptop registration request received"
+        "Registration request received"
     )
 
 
@@ -141,7 +132,7 @@ def register():
                     False,
 
                 "message":
-                    "Missing registration data"
+                    "Missing JSON data"
 
             }), 400
 
@@ -169,7 +160,7 @@ def register():
                     False,
 
                 "message":
-                    "Missing laptop name"
+                    "Missing device name"
 
             }), 400
 
@@ -182,7 +173,7 @@ def register():
                     False,
 
                 "message":
-                    "Missing laptop IP"
+                    "Missing device IP"
 
             }), 400
 
@@ -195,24 +186,9 @@ def register():
                     False,
 
                 "message":
-                    "Missing laptop port"
+                    "Missing device port"
 
             }), 400
-
-
-        log(
-            f"Laptop -> {device_name}"
-        )
-
-
-        log(
-            f"Laptop IP -> {ip}"
-        )
-
-
-        log(
-            f"Laptop port -> {port}"
-        )
 
 
         device_manager.register(
@@ -227,12 +203,8 @@ def register():
 
 
         log(
-            "Laptop registration successful"
-        )
-
-
-        console(
-            "Laptop connected"
+            f"Device registered -> "
+            f"{device_name}"
         )
 
 
@@ -242,7 +214,7 @@ def register():
                 True,
 
             "message":
-                "Laptop registered successfully"
+                "Device registered successfully"
 
         })
 
@@ -255,18 +227,13 @@ def register():
         )
 
 
-        console_error(
-            "Could not register laptop."
-        )
-
-
         return jsonify({
 
             "success":
                 False,
 
             "message":
-                "Registration failed"
+                str(e)
 
         }), 500
 
@@ -290,7 +257,7 @@ def heartbeat():
                     False,
 
                 "message":
-                    "Missing heartbeat data"
+                    "Missing JSON data"
 
             }), 400
 
@@ -310,6 +277,19 @@ def heartbeat():
         )
 
 
+        if not device_name:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "Missing device name"
+
+            }), 400
+
+
         updated = (
             device_manager.heartbeat(
 
@@ -326,9 +306,8 @@ def heartbeat():
         if not updated:
 
             log(
-                f"Heartbeat rejected: "
-                f"unknown laptop -> "
-                f"{device_name}"
+                f"Heartbeat from unknown "
+                f"device -> {device_name}"
             )
 
 
@@ -338,15 +317,9 @@ def heartbeat():
                     False,
 
                 "message":
-                    "Laptop not registered"
+                    "Device not registered"
 
             }), 404
-
-
-        log(
-            f"Heartbeat received -> "
-            f"{device_name}"
-        )
 
 
         return jsonify({
@@ -374,19 +347,19 @@ def heartbeat():
                 False,
 
             "message":
-                "Heartbeat failed"
+                str(e)
 
         }), 500
 
 
 @app.route(
-    "/device",
+    "/devices",
     methods=["GET"]
 )
-def device():
+def devices():
 
-    laptop = (
-        device_manager.get_status()
+    log(
+        "Device list requested"
     )
 
 
@@ -395,42 +368,250 @@ def device():
         "success":
             True,
 
-        "device":
-            laptop
+        "devices":
+            device_manager.get_devices()
 
     })
 
 
 @app.route(
-    "/screenshot",
+    "/probe",
+    methods=["POST"]
+)
+def probe():
+
+    log(
+        "Manual device probe requested"
+    )
+
+
+    try:
+
+        data = request.get_json()
+
+
+        if not data:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "Missing JSON data"
+
+            }), 400
+
+
+        ip = data.get(
+            "ip"
+        )
+
+
+        if not ip:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "IP address required"
+
+            }), 400
+
+
+        port = int(
+            data.get(
+                "port",
+                5001
+            )
+        )
+
+
+        url = (
+            f"http://{ip}:{port}"
+            f"/status"
+        )
+
+
+        log(
+            f"Probing laptop -> {url}"
+        )
+
+
+        import requests
+
+
+        response = requests.get(
+
+            url,
+
+            timeout=5
+
+        )
+
+
+        if response.status_code != 200:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "Laptop returned an error"
+
+            }), 400
+
+
+        laptop = response.json()
+
+
+        if not laptop.get(
+            "success"
+        ):
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "Invalid ScreenLink laptop"
+
+            }), 400
+
+
+        device_name = laptop.get(
+            "device_name"
+        )
+
+
+        if not device_name:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "Laptop did not provide "
+                    "a device name"
+
+            }), 400
+
+
+        device_manager.add_manual_device(
+
+            device_name,
+
+            ip,
+
+            port
+
+        )
+
+
+        return jsonify({
+
+            "success":
+                True,
+
+            "message":
+                "Laptop connected",
+
+            "device": {
+
+                "name":
+                    device_name,
+
+                "ip":
+                    ip,
+
+                "port":
+                    port
+
+            }
+
+        })
+
+
+    except Exception as e:
+
+        log_error(
+            "Probe failed: "
+            + str(e)
+        )
+
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+@app.route(
+    "/screenshot/<device_name>",
     methods=["GET"]
 )
-def screenshot():
+def screenshot(device_name):
+
+    log(
+        "========================================"
+    )
+
 
     log(
         "Screenshot request received"
     )
 
 
+    log(
+        f"Device -> {device_name}"
+    )
+
+
     device = (
-        device_manager.get_device()
+        device_manager.get_device(
+            device_name
+        )
     )
 
 
     if not device:
 
+        log(
+            "Screenshot failed: "
+            "device not found"
+        )
+
+
         return jsonify({
 
             "success":
                 False,
 
             "message":
-                "No laptop connected"
+                "Device not found"
 
         }), 404
 
 
-    if not device_manager.is_online():
+    if not device_manager.is_online(
+        device
+    ):
+
+        log(
+            "Screenshot failed: "
+            "device is offline"
+        )
+
 
         return jsonify({
 
@@ -438,19 +619,22 @@ def screenshot():
                 False,
 
             "message":
-                "Laptop is offline"
+                "Device is offline"
 
         }), 503
 
 
-    result = (
-        screenshot_manager.capture(
-            device
-        )
+    result = screenshot_manager.capture(
+        device
     )
 
 
     if not result:
+
+        log(
+            "Screenshot capture failed"
+        )
+
 
         return jsonify({
 
@@ -473,18 +657,28 @@ def screenshot():
 
 
 @app.route(
-    "/type",
+    "/type/<device_name>",
     methods=["POST"]
 )
-def type_device():
+def type_device(device_name):
+
+    log(
+        "========================================"
+    )
+
 
     log(
         "Typing request received"
     )
 
 
-    device = (
-        device_manager.get_device()
+    log(
+        f"Device -> {device_name}"
+    )
+
+
+    device = device_manager.get_device(
+        device_name
     )
 
 
@@ -496,12 +690,14 @@ def type_device():
                 False,
 
             "message":
-                "No laptop connected"
+                "Device not found"
 
         }), 404
 
 
-    if not device_manager.is_online():
+    if not device_manager.is_online(
+        device
+    ):
 
         return jsonify({
 
@@ -509,7 +705,7 @@ def type_device():
                 False,
 
             "message":
-                "Laptop is offline"
+                "Device is offline"
 
         }), 503
 
@@ -527,7 +723,7 @@ def type_device():
                     False,
 
                 "message":
-                    "Missing text data"
+                    "Missing JSON data"
 
             }), 400
 
@@ -548,6 +744,9 @@ def type_device():
                     "Missing text"
 
             }), 400
+
+
+        import requests
 
 
         url = (
@@ -582,13 +781,6 @@ def type_device():
         )
 
 
-        if response.status_code == 200:
-
-            console(
-                "Typing started"
-            )
-
-
         return (
 
             response.text,
@@ -611,35 +803,40 @@ def type_device():
         )
 
 
-        console_error(
-            "Could not start typing."
-        )
-
-
         return jsonify({
 
             "success":
                 False,
 
             "message":
-                "Unable to start typing"
+                str(e)
 
         }), 500
 
 
 @app.route(
-    "/stop-type",
+    "/stop-type/<device_name>",
     methods=["POST"]
 )
-def stop_type():
+def stop_type(device_name):
+
+    log(
+        "========================================"
+    )
+
 
     log(
         "Stop typing request received"
     )
 
 
-    device = (
-        device_manager.get_device()
+    log(
+        f"Device -> {device_name}"
+    )
+
+
+    device = device_manager.get_device(
+        device_name
     )
 
 
@@ -651,12 +848,14 @@ def stop_type():
                 False,
 
             "message":
-                "No laptop connected"
+                "Device not found"
 
         }), 404
 
 
-    if not device_manager.is_online():
+    if not device_manager.is_online(
+        device
+    ):
 
         return jsonify({
 
@@ -664,17 +863,26 @@ def stop_type():
                 False,
 
             "message":
-                "Laptop is offline"
+                "Device is offline"
 
         }), 503
 
 
     try:
 
+        import requests
+
+
         url = (
             f"http://{device['ip']}:"
             f"{device['port']}"
             f"/stop-type"
+        )
+
+
+        log(
+            f"Sending stop typing request -> "
+            f"{url}"
         )
 
 
@@ -691,13 +899,6 @@ def stop_type():
             f"Laptop stop typing response -> "
             f"{response.status_code}"
         )
-
-
-        if response.status_code == 200:
-
-            console(
-                "Typing stopped"
-            )
 
 
         return (
@@ -722,8 +923,47 @@ def stop_type():
         )
 
 
-        console_error(
-            "Could not stop typing."
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+@app.route(
+    "/click/<device_name>",
+    methods=["POST"]
+)
+def click_device(device_name):
+
+    log(
+        "========================================"
+    )
+
+
+    log(
+        "Click execution request received"
+    )
+
+
+    log(
+        f"Device -> {device_name}"
+    )
+
+
+    device = device_manager.get_device(
+        device_name
+    )
+
+
+    if not device:
+
+        log(
+            "Click failed: device not found"
         )
 
 
@@ -733,41 +973,19 @@ def stop_type():
                 False,
 
             "message":
-                "Unable to stop typing"
-
-        }), 500
-
-
-@app.route(
-    "/click",
-    methods=["POST"]
-)
-def click_device():
-
-    log(
-        "Click execution request received"
-    )
-
-
-    device = (
-        device_manager.get_device()
-    )
-
-
-    if not device:
-
-        return jsonify({
-
-            "success":
-                False,
-
-            "message":
-                "No laptop connected"
+                "Device not found"
 
         }), 404
 
 
-    if not device_manager.is_online():
+    if not device_manager.is_online(
+        device
+    ):
+
+        log(
+            "Click failed: device offline"
+        )
+
 
         return jsonify({
 
@@ -775,7 +993,7 @@ def click_device():
                 False,
 
             "message":
-                "Laptop is offline"
+                "Device is offline"
 
         }), 503
 
@@ -832,16 +1050,156 @@ def click_device():
             }), 400
 
 
-        log(
-            f"Forwarding {len(steps)} "
-            f"click step(s) to laptop"
-        )
+        if len(steps) > 6:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "Maximum 6 click steps allowed"
+
+            }), 400
+
+
+        for index, step in enumerate(
+            steps,
+            start=1
+        ):
+
+            if not isinstance(
+                step,
+                dict
+            ):
+
+                return jsonify({
+
+                    "success":
+                        False,
+
+                    "message":
+                        f"Invalid step {index}"
+
+                }), 400
+
+
+            if step.get(
+                "action"
+            ) != "click":
+
+                return jsonify({
+
+                    "success":
+                        False,
+
+                    "message":
+                        f"Step {index} must use "
+                        f"action 'click'"
+
+                }), 400
+
+
+            point = step.get(
+                "point"
+            )
+
+
+            if not isinstance(
+                point,
+                dict
+            ):
+
+                return jsonify({
+
+                    "success":
+                        False,
+
+                    "message":
+                        f"Step {index} is missing "
+                        f"point"
+
+                }), 400
+
+
+            try:
+
+                x = float(
+                    point["x"]
+                )
+
+                y = float(
+                    point["y"]
+                )
+
+            except (
+                KeyError,
+                TypeError,
+                ValueError
+            ):
+
+                return jsonify({
+
+                    "success":
+                        False,
+
+                    "message":
+                        f"Step {index} has "
+                        f"invalid coordinates"
+
+                }), 400
+
+
+            if not (
+                0 <= x <= 1000
+            ):
+
+                return jsonify({
+
+                    "success":
+                        False,
+
+                    "message":
+                        f"Step {index} x must "
+                        f"be between 0 and 1000"
+
+                }), 400
+
+
+            if not (
+                0 <= y <= 1000
+            ):
+
+                return jsonify({
+
+                    "success":
+                        False,
+
+                    "message":
+                        f"Step {index} y must "
+                        f"be between 0 and 1000"
+
+                }), 400
+
+
+        import requests
 
 
         url = (
             f"http://{device['ip']}:"
             f"{device['port']}"
             f"/click"
+        )
+
+
+        log(
+            f"Forwarding click request -> "
+            f"{url}"
+        )
+
+
+        log(
+            f"Click steps -> {len(steps)}"
         )
 
 
@@ -862,31 +1220,6 @@ def click_device():
             f"Laptop click response -> "
             f"{response.status_code}"
         )
-
-
-        if response.status_code == 200:
-
-            try:
-
-                result = response.json()
-
-                executed = result.get(
-                    "executed",
-                    0
-                )
-
-
-                console(
-                    f"Clicks executed: "
-                    f"{executed}"
-                )
-
-
-            except Exception:
-
-                console(
-                    "Clicks executed"
-                )
 
 
         return (
@@ -911,11 +1244,6 @@ def click_device():
         )
 
 
-        console_error(
-            "Could not execute clicks."
-        )
-
-
         return jsonify({
 
             "success":
@@ -937,8 +1265,8 @@ def shutdown(
     )
 
 
-    console(
-        "ScreenLink stopped"
+    log(
+        "Goodbye."
     )
 
 
@@ -959,16 +1287,57 @@ if __name__ == "__main__":
     )
 
 
-    phone_ip = (
-        get_phone_ip()
-    )
+    phone_ip = get_phone_ip()
 
 
     print()
+
+    print("=" * 45)
+
     print(
-        f"Phone IP: {phone_ip}"
+        "       SCREENLINK PHONE SERVER"
     )
-    print()
+
+    print("=" * 45)
+
+
+    print(
+        f"Phone IP       : {phone_ip}"
+    )
+
+
+    print(
+        f"Server Address : "
+        f"http://{phone_ip}:{PORT}"
+    )
+
+
+    print(
+        f"HTTP Port      : {PORT}"
+    )
+
+
+    print(
+        f"Screenshot Dir : "
+        f"{SCREENSHOT_DIRECTORY}"
+    )
+
+
+    print(
+        f"Log File       : "
+        f"{get_log_file()}"
+    )
+
+
+    print("=" * 45)
+
+
+    print(
+        "Waiting for laptops..."
+    )
+
+
+    print("=" * 45)
 
 
     log(
@@ -998,7 +1367,8 @@ if __name__ == "__main__":
 
 
     log(
-        "Waiting for laptop registration"
+        f"Log file -> "
+        f"{get_log_file()}"
     )
 
 
@@ -1012,9 +1382,7 @@ if __name__ == "__main__":
 
             debug=False,
 
-            use_reloader=False,
-
-            threaded=True
+            use_reloader=False
 
         )
 
@@ -1029,11 +1397,6 @@ if __name__ == "__main__":
         log_error(
             "Server crashed: "
             + str(e)
-        )
-
-
-        console_error(
-            "Phone server stopped unexpectedly."
         )
 
 
