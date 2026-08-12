@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/style.css?v=5"
+        href="/static/css/style.css?v=6"
     >
 
 </head>
@@ -52,10 +52,6 @@
     </header>
 
 
-    <!-- ================================= -->
-    <!-- CONNECTING VIEW                    -->
-    <!-- ================================= -->
-
     <main
         id="connectingView"
         class="view connecting-view"
@@ -74,19 +70,13 @@
     </main>
 
 
-    <!-- ================================= -->
-    <!-- CONTROL VIEW                       -->
-    <!-- ================================= -->
-
     <main
         id="controlView"
         class="view hidden"
     >
 
 
-        <!-- ================================= -->
-        <!-- SCREENSHOT                         -->
-        <!-- ================================= -->
+        <!-- SCREENSHOT -->
 
         <section class="section">
 
@@ -153,9 +143,7 @@
         </section>
 
 
-        <!-- ================================= -->
-        <!-- CLICK VISION                       -->
-        <!-- ================================= -->
+        <!-- CLICK VISION -->
 
         <section class="section">
 
@@ -164,8 +152,8 @@
             </h2>
 
             <p class="muted section-description">
-                Use the screenshot with ChatGPT to identify
-                the objects that should be clicked.
+                Give the screenshot and prompt to ChatGPT,
+                then paste the returned JSON below.
             </p>
 
 
@@ -203,20 +191,6 @@
                     Copy Prompt
                 </button>
 
-                <button
-                    class="small-button"
-                    onclick="copyImageAndPrompt('click')"
-                >
-                    Copy Image + Prompt
-                </button>
-
-                <button
-                    class="small-button"
-                    onclick="shareImageAndPrompt('click')"
-                >
-                    Share
-                </button>
-
             </div>
 
 
@@ -228,19 +202,7 @@
             <textarea
                 id="clickJson"
                 class="click-json"
-                placeholder='{
-  "steps": [
-    {
-      "action": "click",
-      "target": "Java",
-      "confidence": 0.99,
-      "point": {
-        "x": 366,
-        "y": 347
-      }
-    }
-  ]
-}'
+                placeholder='Paste ChatGPT JSON here...'
                 rows="10"
             ></textarea>
 
@@ -283,9 +245,7 @@
         </section>
 
 
-        <!-- ================================= -->
-        <!-- TYPING                             -->
-        <!-- ================================= -->
+        <!-- TYPING -->
 
         <section class="section">
 
@@ -293,9 +253,9 @@
                 Typing
             </h2>
 
-
             <p class="muted section-description">
-                Select the type of task ChatGPT should solve.
+                Select the type of question you want ChatGPT
+                to solve.
             </p>
 
 
@@ -377,20 +337,6 @@
                     Copy Prompt
                 </button>
 
-                <button
-                    class="small-button"
-                    onclick="copyImageAndPrompt('typing')"
-                >
-                    Copy Image + Prompt
-                </button>
-
-                <button
-                    class="small-button"
-                    onclick="shareImageAndPrompt('typing')"
-                >
-                    Share
-                </button>
-
             </div>
 
 
@@ -398,7 +344,7 @@
                 id="customPromptInfo"
                 class="custom-info hidden"
             >
-                Custom Prompt is editable.
+                Only the Custom prompt can be edited.
             </div>
 
 
@@ -472,7 +418,7 @@
 
 
 <script
-    src="/static/js/app.js?v=5"
+    src="/static/js/app.js?v=6"
 ></script>
 
 </body>

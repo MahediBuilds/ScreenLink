@@ -1,0 +1,15 @@
+Analyze the screenshot carefully.
+
+Read the complete question and identify exactly what belongs in the blank.
+
+Return ONLY the answer that should replace the blank.
+
+Do not provide explanations.
+
+Do not repeat the question.
+
+Do not include markdown.
+
+Do not write phrases such as "The answer is".
+
+Return only the required answer.

@@ -1,0 +1,13 @@
+Analyze the screenshot carefully.
+
+Read the complete question or task shown in the screenshot.
+
+Determine exactly what is being asked.
+
+Provide the correct answer.
+
+Return ONLY the answer required by the question.
+
+Do not provide unnecessary explanations.
+
+Do not include markdown unless it is explicitly required by the question.

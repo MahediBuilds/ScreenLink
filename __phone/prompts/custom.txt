@@ -1,0 +1,7 @@
+Analyze the screenshot carefully.
+
+Follow the instructions shown in the screenshot.
+
+Return the answer requested by the task.
+
+Return only the answer unless the task explicitly requires an explanation.

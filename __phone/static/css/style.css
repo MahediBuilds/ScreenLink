@@ -65,9 +65,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* HEADER                                    */
-/* ========================================= */
+/* HEADER */
 
 .header {
     display: flex;
@@ -91,13 +89,14 @@ button:disabled {
     font-size: 24px;
 
     font-weight: 650;
-
-    letter-spacing: -0.5px;
 }
 
 
 .header p {
-    margin: 5px 0 0;
+    margin:
+        5px
+        0
+        0;
 
     color: #888;
 
@@ -123,8 +122,6 @@ button:disabled {
     color: #999;
 
     font-size: 13px;
-
-    white-space: nowrap;
 }
 
 
@@ -136,11 +133,6 @@ button:disabled {
     border-radius: 50%;
 
     background: #777;
-}
-
-
-.connection-indicator.connected {
-    color: #ddd;
 }
 
 
@@ -156,9 +148,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* VIEWS                                     */
-/* ========================================= */
+/* VIEWS */
 
 .view {
     margin-top: 30px;
@@ -170,9 +160,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* CONNECTING                                */
-/* ========================================= */
+/* CONNECTING */
 
 .connecting-view {
     min-height: 55vh;
@@ -203,8 +191,6 @@ button:disabled {
     margin: 0;
 
     color: #888;
-
-    font-size: 15px;
 }
 
 
@@ -248,9 +234,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* SECTIONS                                  */
-/* ========================================= */
+/* SECTIONS */
 
 .section {
     margin-bottom: 35px;
@@ -289,8 +273,6 @@ button:disabled {
 
 
 .section h3 {
-    margin: 0;
-
     font-size: 17px;
 
     font-weight: 600;
@@ -298,9 +280,10 @@ button:disabled {
 
 
 .subheading {
-    margin-top: 24px !important;
-
-    margin-bottom: 10px !important;
+    margin:
+        24px
+        0
+        10px !important;
 }
 
 
@@ -331,9 +314,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* BUTTONS                                   */
-/* ========================================= */
+/* BUTTONS */
 
 .primary-button,
 .secondary-button {
@@ -346,10 +327,6 @@ button:disabled {
     font-size: 14px;
 
     font-weight: 600;
-
-    transition:
-        opacity 0.15s ease,
-        transform 0.15s ease;
 }
 
 
@@ -380,9 +357,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* SCREENSHOT                                */
-/* ========================================= */
+/* SCREENSHOT */
 
 .screenshot-container {
     width: 100%;
@@ -445,15 +420,11 @@ button:disabled {
 
     justify-content: flex-end;
 
-    gap: 8px;
-
     margin-top: 10px;
 }
 
 
-/* ========================================= */
-/* PROMPTS                                   */
-/* ========================================= */
+/* PROMPTS */
 
 .prompt-box {
     margin-top: 15px;
@@ -492,8 +463,6 @@ button:disabled {
     font-weight: 600;
 
     text-transform: uppercase;
-
-    letter-spacing: 0.4px;
 }
 
 
@@ -509,8 +478,6 @@ button:disabled {
     color: #777;
 
     font-size: 10px;
-
-    text-transform: uppercase;
 }
 
 
@@ -561,8 +528,6 @@ button:disabled {
 .prompt-actions {
     display: flex;
 
-    flex-wrap: wrap;
-
     justify-content: flex-end;
 
     gap: 8px;
@@ -580,16 +545,15 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* TASK SELECT                               */
-/* ========================================= */
+/* TASK SELECT */
 
 .field-label {
     display: block;
 
-    margin-top: 14px;
-
-    margin-bottom: 7px;
+    margin:
+        14px
+        0
+        7px;
 
     color: #999;
 
@@ -598,8 +562,6 @@ button:disabled {
     font-weight: 600;
 
     text-transform: uppercase;
-
-    letter-spacing: 0.5px;
 }
 
 
@@ -625,14 +587,7 @@ button:disabled {
 }
 
 
-.task-select:focus {
-    border-color: #666;
-}
-
-
-/* ========================================= */
-/* TEXTBOX ACTIONS                           */
-/* ========================================= */
+/* TEXTBOX ACTIONS */
 
 .textbox-actions {
     display: flex;
@@ -662,12 +617,6 @@ button:disabled {
     color: #d0d0d0;
 
     font-size: 13px;
-
-    font-weight: 500;
-
-    transition:
-        background 0.15s ease,
-        transform 0.15s ease;
 }
 
 
@@ -676,9 +625,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* CLICK JSON                                */
-/* ========================================= */
+/* JSON */
 
 .click-json {
     display: block;
@@ -723,9 +670,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* TYPING                                    */
-/* ========================================= */
+/* TYPING */
 
 .type-text {
     display: block;
@@ -772,9 +717,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* RESULTS                                   */
-/* ========================================= */
+/* RESULT */
 
 .result {
     min-height: 20px;
@@ -803,9 +746,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* TEMPORARY MESSAGE                         */
-/* ========================================= */
+/* TEMPORARY MESSAGE */
 
 .temporary-message {
     position: fixed;
@@ -836,10 +777,6 @@ button:disabled {
 
     text-align: center;
 
-    box-shadow:
-        0 8px 30px
-        rgba(0, 0, 0, 0.4);
-
     opacity: 0;
 
     pointer-events: none;
@@ -861,9 +798,7 @@ button:disabled {
 }
 
 
-/* ========================================= */
-/* MOBILE                                    */
-/* ========================================= */
+/* MOBILE */
 
 @media (
     max-width: 600px
@@ -883,24 +818,8 @@ button:disabled {
     }
 
 
-    .header h1 {
-        font-size: 22px;
-    }
-
-
-    .connection-indicator {
-        font-size: 12px;
-
-        padding:
-            6px
-            9px;
-    }
-
-
     .section {
         padding: 16px;
-
-        border-radius: 12px;
     }
 
 
@@ -951,12 +870,6 @@ button:disabled {
 
     .typing-buttons button {
         width: 100%;
-    }
-
-
-    .textbox-actions {
-        justify-content:
-            flex-end;
     }
 
 }
