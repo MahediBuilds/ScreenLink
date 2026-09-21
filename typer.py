@@ -1,8 +1,6 @@
 import platform
-import time
 import random
 import threading
-
 
 MIN_WPM, MAX_WPM = 10, 50
 WORD_PAUSE_RANGE = (0.5, 1.2)
@@ -31,17 +29,12 @@ elif SYSTEM == "Darwin":
 
 else:
 
-    raise RuntimeError(
-        f"Unsupported operating system: {SYSTEM}"
-    )
+    raise RuntimeError(f"Unsupported operating system: {SYSTEM}")
 
 
 def delay_for_char(ch):
 
-    wpm = random.uniform(
-        MIN_WPM,
-        MAX_WPM
-    )
+    wpm = random.uniform(MIN_WPM, MAX_WPM)
 
     cps = (wpm * 5) / 60
 
@@ -108,25 +101,18 @@ def type_code(lines):
 
         if stop_event.is_set():
 
-            log_message(
-                "Typing stopped"
-            )
+            log_message("Typing stopped")
 
             return False
 
-        if (
-            not line.strip()
-            or len(line.strip()) > MAX_LINE_LEN
-        ):
+        if not line.strip() or len(line.strip()) > MAX_LINE_LEN:
             continue
 
         clean_line = line.strip()
 
         if clean_line.startswith("#IS"):
 
-            indent_stack.append(
-                clean_line
-            )
+            indent_stack.append(clean_line)
 
             continue
 
@@ -156,32 +142,20 @@ def type_code(lines):
             if stop_event.is_set():
                 return False
 
-            char_count += 1
+            char_count += 1  # noqa: SIM113
 
-            if (
-                random.random()
-                < TYPO_PROBABILITY
-                and ch.isalpha()
-            ):
+            if random.random() < TYPO_PROBABILITY and ch.isalpha():
 
-                wrong_char = random.choice(
-                    "abcdefghijklmnopqrstuvwxyz"
-                )
+                wrong_char = random.choice("abcdefghijklmnopqrstuvwxyz")
 
-                write_text(
-                    wrong_char
-                )
+                write_text(wrong_char)
 
-                if stop_event.wait(
-                    random.uniform(0.05, 0.2)
-                ):
+                if stop_event.wait(random.uniform(0.05, 0.2)):
                     return False
 
                 press_backspace()
 
-                if stop_event.wait(
-                    BACKSPACE_DELAY
-                ):
+                if stop_event.wait(BACKSPACE_DELAY):
                     return False
 
             if stop_event.is_set():
@@ -191,21 +165,15 @@ def type_code(lines):
 
             word_buffer += ch
 
-            if stop_event.wait(
-                delay_for_char(ch)
-            ):
+            if stop_event.wait(delay_for_char(ch)):
                 return False
 
             if ch in (" ", "\t"):
 
-                if word_buffer.strip():
-
-                    if stop_event.wait(
-                        random.uniform(
-                            *WORD_PAUSE_RANGE
-                        )
-                    ):
-                        return False
+                if word_buffer.strip() and stop_event.wait(
+                    random.uniform(*WORD_PAUSE_RANGE)
+                ):
+                    return False
 
                 word_buffer = ""
 
@@ -225,23 +193,11 @@ def type_code(lines):
 
         line_count += 1
 
-        if stop_event.wait(
-            random.uniform(
-                *LINE_DELAY_RANGE
-            )
-        ):
+        if stop_event.wait(random.uniform(*LINE_DELAY_RANGE)):
             return False
 
-        if (
-            line_count
-            % PAUSE_EVERY_N_LINES
-            == 0
-        ):
-
-            if stop_event.wait(
-                PAUSE_DURATION
-            ):
-                return False
+        if (line_count % PAUSE_EVERY_N_LINES == 0) and stop_event.wait(PAUSE_DURATION):
+            return False
 
     if stop_event.is_set():
         return False
@@ -253,9 +209,7 @@ def type_code(lines):
 
 def type_text(text):
 
-    return type_code(
-        text.splitlines()
-    )
+    return type_code(text.splitlines())
 
 
 def stop_typing():

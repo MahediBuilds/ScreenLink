@@ -1,31 +1,23 @@
 import socket
 
-from logger import log, log_error
+from logger import log_error
 
 
 def get_local_ip():
 
-    sock = socket.socket(
-        socket.AF_INET,
-        socket.SOCK_DGRAM
-    )
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     try:
 
-        sock.connect(
-            ("8.8.8.8", 80)
-        )
+        sock.connect(("8.8.8.8", 80))
 
         ip = sock.getsockname()[0]
 
         return ip
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
 
-        log_error(
-            "Unable to determine local IP: "
-            + str(e)
-        )
+        log_error("Unable to determine local IP: " + str(e))
 
         return "127.0.0.1"
 

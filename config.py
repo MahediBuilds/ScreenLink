@@ -12,7 +12,7 @@ DEFAULT_CONFIG = {
     "phone_port": 5000,
     "laptop_port": 5001,
     "heartbeat_interval": 10,
-    "connection_retry_interval": 10
+    "connection_retry_interval": 10,
 }
 
 
@@ -36,7 +36,7 @@ def load_config():
 
         return config
 
-    except Exception:
+    except Exception:  # noqa: BLE001
         save_config(DEFAULT_CONFIG)
         return DEFAULT_CONFIG.copy()
 
@@ -45,8 +45,4 @@ def save_config(config):
     os.makedirs(CONFIG_DIR, exist_ok=True)
 
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(
-            config,
-            f,
-            indent=4
-        )
+        json.dump(config, f, indent=4)
