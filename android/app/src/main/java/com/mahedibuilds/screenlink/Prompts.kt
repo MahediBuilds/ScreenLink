@@ -4,15 +4,51 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
-/** Prompt templates bundled in res/raw. CUSTOM starts from its template and can be edited. */
-enum class PromptType(val label: String, val rawRes: Int) {
-    GENERAL("General", R.raw.prompt_general),
-    FILL_BLANK("Fill in the blank", R.raw.prompt_fill_blank),
-    PYTHON("Python", R.raw.prompt_python),
-    SQL("SQL", R.raw.prompt_sql),
-    EMAIL("Email", R.raw.prompt_email),
-    CLICK("Click", R.raw.prompt_click),
-    CUSTOM("Custom", R.raw.prompt_custom),
+/** A prompt loaded from assets/prompts/<name>.txt. */
+data class Prompt(val name: String, val label: String, val text: String)
+
+/**
+ * Built-in prompts are the .txt files in app/src/main/assets/prompts/. Each file becomes one tab:
+ * General first, Python second, GUI third, then the rest alphabetically (case-insensitive).
+ * The Custom tab is not a file; it is added by the UI and stored in the app's preferences.
+ */
+object PromptLibrary {
+    const val FOLDER = "prompts"
+    private val PINNED = listOf("general", "python", "gui")
+
+    /**
+     * Loads every non-empty prompt. [list] returns the file names in the folder and [read] returns a
+     * file's contents; both come from the AssetManager in the app and from fakes in tests.
+     */
+    fun load(list: () -> List<String>, read: (String) -> String): List<Prompt> {
+        val files = runCatching { list() }.getOrDefault(emptyList())
+            .filter { it.endsWith(".txt", ignoreCase = true) }
+        val byName = linkedMapOf<String, String>()  // lowercase name -> file name; first wins
+        for (file in files.sorted()) {
+            val name = file.dropLast(4).trim()
+            // Custom is always the editable tab, never a file-based one.
+            if (name.isEmpty() || name.equals("custom", ignoreCase = true)) continue
+            byName.putIfAbsent(name.lowercase(), file)
+        }
+        return order(byName.values.map { it.dropLast(4).trim() }).mapNotNull { name ->
+            val text = runCatching { read(byName.getValue(name.lowercase())) }.getOrNull()
+                ?.replace("\r\n", "\n")?.trim()
+            if (text.isNullOrEmpty()) null else Prompt(name, label(name), text)
+        }
+    }
+
+    /** General, Python, GUI first (when present), then the rest case-insensitively. */
+    fun order(names: List<String>): List<String> = names.sortedWith(
+        compareBy<String>(
+            { PINNED.indexOf(it.lowercase()).let { i -> if (i < 0) PINNED.size else i } },
+            { it.lowercase() },
+            { it },
+        )
+    )
+
+    /** "Fill_in_the_blank" -> "Fill in the blank"; the file name itself is unchanged. */
+    fun label(name: String): String =
+        name.replace('_', ' ').replace('-', ' ').replace(Regex("\\s+"), " ").trim()
 }
 
 data class ClickStep(val target: String, val x: Double, val y: Double)

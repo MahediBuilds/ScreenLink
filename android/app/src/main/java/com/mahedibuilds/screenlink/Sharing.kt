@@ -3,9 +3,16 @@ package com.mahedibuilds.screenlink
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.ContentValues
 import android.content.Intent
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /** Android clipboard and share-sheet helpers. */
 object Sharing {
@@ -46,5 +53,36 @@ object Sharing {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(intent, "Share screenshot"))
+    }
+
+    /** Saves the screenshot to Pictures/ScreenLink in the phone's gallery. */
+    fun saveToGallery(context: Context, jpeg: ByteArray) {
+        val name = "ScreenLink_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, name)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ScreenLink")
+                put(MediaStore.Images.Media.IS_PENDING, 1)
+            } else {
+                val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ScreenLink")
+                dir.mkdirs()
+                @Suppress("DEPRECATION")
+                put(MediaStore.Images.Media.DATA, File(dir, name).absolutePath)
+            }
+        }
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            ?: throw IllegalStateException("Could not create the gallery entry.")
+        try {
+            resolver.openOutputStream(uri)?.use { it.write(jpeg) }
+                ?: throw IllegalStateException("Could not open the gallery file.")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                resolver.update(uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null)
+            }
+        } catch (e: Exception) {
+            resolver.delete(uri, null, null)
+            throw e
+        }
     }
 }

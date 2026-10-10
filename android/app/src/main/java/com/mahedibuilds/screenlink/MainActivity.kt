@@ -1,9 +1,13 @@
 package com.mahedibuilds.screenlink
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,7 +34,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -190,6 +193,19 @@ private fun ConnectionCard(vm: ScreenLinkViewModel) {
 private fun ScreenshotCard(vm: ScreenLinkViewModel) {
     val context = LocalContext.current
     var fullscreen by remember { mutableStateOf(false) }
+    val save: (ByteArray) -> Unit = { jpeg ->
+        try {
+            Sharing.saveToGallery(context, jpeg)
+            vm.showMessage(MessageKind.SUCCESS, "Screenshot saved to Pictures/ScreenLink.")
+        } catch (e: Exception) {
+            vm.showMessage(MessageKind.ERROR, "Could not save screenshot: ${e.message}")
+        }
+    }
+    val storagePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val jpeg = vm.screenshot?.jpeg
+        if (!granted) vm.showMessage(MessageKind.ERROR, "Storage permission is needed to save to the gallery.")
+        else if (jpeg != null) save(jpeg)
+    }
 
     Section("Screenshot") {
         Button(
@@ -220,10 +236,25 @@ private fun ScreenshotCard(vm: ScreenLinkViewModel) {
                 "${shot.width}x${shot.height}, ${shot.jpeg.size / 1024} KB, taken ${vm.screenshotTime}. Tap to zoom.",
                 style = MaterialTheme.typography.bodySmall,
             )
-            OutlinedButton(
-                onClick = { Sharing.shareScreenshot(context, shot.jpeg, null) },
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text("Share screenshot") }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = { Sharing.shareScreenshot(context, shot.jpeg, null) },
+                    modifier = Modifier.weight(1f),
+                ) { Text("Share") }
+                OutlinedButton(
+                    onClick = {
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+                            context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                            PackageManager.PERMISSION_GRANTED
+                        ) {
+                            storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        } else {
+                            save(shot.jpeg)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                ) { Text("Save to gallery") }
+            }
 
             if (fullscreen) ZoomDialog(image) { fullscreen = false }
         }
@@ -272,17 +303,22 @@ private fun PromptCard(vm: ScreenLinkViewModel) {
             Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            PromptType.entries.forEach { type ->
+            vm.prompts.forEach { prompt ->
                 FilterChip(
-                    selected = vm.promptType == type,
-                    onClick = { vm.selectPrompt(type) },
-                    label = { Text(type.label) },
+                    selected = vm.selectedPrompt == prompt.name,
+                    onClick = { vm.selectPrompt(prompt.name) },
+                    label = { Text(prompt.label) },
                 )
             }
+            FilterChip(
+                selected = vm.isCustomSelected,
+                onClick = { vm.selectPrompt(null) },
+                label = { Text(ScreenLinkViewModel.CUSTOM_LABEL) },
+            )
         }
 
         val prompt = vm.promptText()
-        if (vm.promptType == PromptType.CUSTOM) {
+        if (vm.isCustomSelected) {
             OutlinedTextField(
                 value = vm.customPrompt,
                 onValueChange = vm::updateCustomPrompt,
@@ -308,7 +344,7 @@ private fun PromptCard(vm: ScreenLinkViewModel) {
             OutlinedButton(
                 onClick = {
                     Sharing.copy(context, "ScreenLink prompt", prompt)
-                    vm.showMessage(MessageKind.SUCCESS, "${vm.promptType.label} prompt copied to the clipboard.")
+                    vm.showMessage(MessageKind.SUCCESS, "${vm.promptLabel()} prompt copied to the clipboard.")
                 },
                 enabled = prompt.isNotBlank(),
                 modifier = Modifier.weight(1f),
@@ -365,16 +401,9 @@ private fun ResponseCard(vm: ScreenLinkViewModel) {
         HorizontalDivider()
         Text("Type on laptop", fontWeight = FontWeight.SemiBold)
         Text(
-            "Types the response into whichever window is focused on the laptop.",
+            "Types the response line by line into whichever window is focused on the laptop.",
             style = MaterialTheme.typography.bodySmall,
         )
-        Row(
-            Modifier.clickable(enabled = !vm.typingActive) { vm.updateStripIndent(!vm.stripIndent) },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Checkbox(checked = vm.stripIndent, onCheckedChange = vm::updateStripIndent, enabled = !vm.typingActive)
-            Text("Remove leading indentation (for editors that auto-indent)")
-        }
         if (vm.typingActive) {
             val job = vm.typingJob
             if (job != null && job.total > 0) {
@@ -399,7 +428,7 @@ private fun ResponseCard(vm: ScreenLinkViewModel) {
         HorizontalDivider()
         Text("Click on laptop", fontWeight = FontWeight.SemiBold)
         Text(
-            "For responses to the Click prompt: JSON with normalized (0-1000) points.",
+            "For responses to the GUI prompt: JSON with normalized (0-1000) points.",
             style = MaterialTheme.typography.bodySmall,
         )
         if (vm.response.isNotBlank()) {

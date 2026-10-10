@@ -23,8 +23,7 @@ DEFAULTS = {
     "jpeg_quality": 80,
     # Text entry
     "max_text_chars": 20000,
-    "type_start_delay": 1.0,     # seconds before typing begins
-    "type_char_interval": 0.01,  # seconds between characters
+    "type_start_delay": 1.0,     # seconds before typing begins (speed and pauses: see typer.py)
     # Clicks
     "max_click_steps": 10,
     "click_interval": 0.25,      # seconds between clicks

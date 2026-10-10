@@ -15,3 +15,11 @@ android/app/build/
 android/local.properties
 android/.idea/
 *.iml
+
+# Release signing (keep the keystore and its passwords out of git)
+android/keystore.properties
+*.jks
+*.keystore
+
+# Built APKs (upload them to GitHub Releases instead of committing them)
+*.apk

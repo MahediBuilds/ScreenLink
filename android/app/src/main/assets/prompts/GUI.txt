@@ -32,7 +32,7 @@ Rules:
 - y=0 is the top edge, y=1000 is the bottom edge.
 - Confidence is between 0 and 1.
 - Inspect the screenshot carefully. Do not guess an object's position from text alone.
-- Return JSON ONLY. No markdown. No explanations.
+- Return JSON ONLY. In markdown. No explanations.
 
 Example:
 
@@ -40,7 +40,7 @@ Example:
   "steps": [
     {
       "action": "click",
-      "target": "Submit button",
+      "target": "Java",
       "confidence": 0.97,
       "point": {
         "x": 366,
@@ -49,3 +49,4 @@ Example:
     }
   ]
 }
+

@@ -49,17 +49,23 @@ class ScreenLinkViewModel(application: Application) : AndroidViewModel(applicati
     var screenshotLoading by mutableStateOf(false); private set
     var screenshotError by mutableStateOf<String?>(null); private set
 
-    // Prompts
-    var promptType by mutableStateOf(
-        PromptType.entries.firstOrNull { it.name == prefs.getString(KEY_PROMPT, null) } ?: PromptType.GENERAL
-    ); private set
+    // Prompts: the file-based tabs are read from assets/prompts each time the app starts.
+    val prompts: List<Prompt> = PromptLibrary.load(
+        list = { application.assets.list(PromptLibrary.FOLDER)?.toList().orEmpty() },
+        read = { file ->
+            application.assets.open("${PromptLibrary.FOLDER}/$file").bufferedReader().use { it.readText() }
+        },
+    )
+
+    /** Name of the selected file-based prompt, or null when the Custom tab is selected. */
+    var selectedPrompt by mutableStateOf(initialPromptSelection()); private set
+    val isCustomSelected get() = selectedPrompt == null
     var customPrompt by mutableStateOf(
-        prefs.getString(KEY_CUSTOM_PROMPT, null) ?: readRaw(PromptType.CUSTOM.rawRes)
+        prefs.getString(KEY_CUSTOM_PROMPT, null) ?: application.getString(R.string.custom_prompt_default)
     ); private set
 
     // Response and desktop actions
     var response by mutableStateOf("")
-    var stripIndent by mutableStateOf(prefs.getBoolean(KEY_STRIP_INDENT, false)); private set
     var typingJob by mutableStateOf<TypingJob?>(null); private set
     var typingActive by mutableStateOf(false); private set
     var cancelRequested by mutableStateOf(false); private set
@@ -211,9 +217,23 @@ class ScreenLinkViewModel(application: Application) : AndroidViewModel(applicati
 
     // ----- prompts ----------------------------------------------------------
 
-    fun selectPrompt(type: PromptType) {
-        promptType = type
-        prefs.edit().putString(KEY_PROMPT, type.name).apply()
+    /** Restores the last tab if its file still exists; otherwise the first file tab, or Custom if there are none. */
+    private fun initialPromptSelection(): String? {
+        val stored = prefs.getString(KEY_PROMPT, null)
+        if (stored == CUSTOM_SELECTION || stored == "CUSTOM") return null
+        // Selections saved before prompts moved to files used enum names; most already match a file name.
+        val saved = when (stored) {
+            "CLICK" -> "GUI"
+            "FILL_BLANK" -> "Fill_in_the_blank"
+            else -> stored
+        }
+        return prompts.firstOrNull { it.name.equals(saved, ignoreCase = true) }?.name ?: prompts.firstOrNull()?.name
+    }
+
+    /** Selects a file-based prompt by name, or the Custom tab when [name] is null. */
+    fun selectPrompt(name: String?) {
+        selectedPrompt = name
+        prefs.edit().putString(KEY_PROMPT, name ?: CUSTOM_SELECTION).apply()
     }
 
     fun updateCustomPrompt(text: String) {
@@ -221,20 +241,16 @@ class ScreenLinkViewModel(application: Application) : AndroidViewModel(applicati
         prefs.edit().putString(KEY_CUSTOM_PROMPT, text).apply()
     }
 
-    fun resetCustomPrompt() = updateCustomPrompt(readRaw(PromptType.CUSTOM.rawRes))
+    fun resetCustomPrompt() =
+        updateCustomPrompt(getApplication<Application>().getString(R.string.custom_prompt_default))
 
-    fun promptText(): String =
-        if (promptType == PromptType.CUSTOM) customPrompt else readRaw(promptType.rawRes)
+    private fun selectedFilePrompt(): Prompt? = prompts.firstOrNull { it.name == selectedPrompt }
 
-    private fun readRaw(res: Int): String =
-        getApplication<Application>().resources.openRawResource(res).bufferedReader().use { it.readText() }.trim()
+    fun promptText(): String = if (isCustomSelected) customPrompt else selectedFilePrompt()?.text.orEmpty()
+
+    fun promptLabel(): String = if (isCustomSelected) CUSTOM_LABEL else selectedFilePrompt()?.label.orEmpty()
 
     // ----- text entry -------------------------------------------------------
-
-    fun updateStripIndent(value: Boolean) {
-        stripIndent = value
-        prefs.edit().putBoolean(KEY_STRIP_INDENT, value).apply()
-    }
 
     fun sendText() {
         val text = response
@@ -250,7 +266,7 @@ class ScreenLinkViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             var job: TypingJob? = null
             try {
-                job = io { api.startTyping(text, stripIndent) }
+                job = io { api.startTyping(text) }
                 typingJob = job
                 message = OpMessage(MessageKind.INFO, "Laptop accepted job #${job.id}. Typing ${job.total} characters...")
                 while (job!!.state == "typing") {
@@ -336,8 +352,9 @@ class ScreenLinkViewModel(application: Application) : AndroidViewModel(applicati
         private const val KEY_PORT = "port"
         private const val KEY_TOKEN = "token"
         private const val KEY_PROMPT = "prompt"
+        private const val CUSTOM_SELECTION = "custom"  // no file tab can be named Custom
+        const val CUSTOM_LABEL = "Custom"
         private const val KEY_CUSTOM_PROMPT = "custom_prompt"
-        private const val KEY_STRIP_INDENT = "strip_indent"
         private const val POLL_MS = 300L
         private const val MAX_DISPLAY_PX = 2560
     }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Starting text for the Custom prompt tab until the user edits it. -->
+    <string name="custom_prompt_default">Analyze the screenshot carefully.\n\nFollow the instructions shown in the screenshot.\n\nReturn the answer requested by the task.\n\nReturn only the answer unless the task explicitly requires an explanation.</string>
+</resources>

@@ -26,6 +26,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import typer
 from config import PAIRED_FILE, load_config
 
 API_VERSION = 1
@@ -92,9 +93,10 @@ def to_pixels(nx, ny, width, height):
 class ScreenLink:
     """All client state; HTTP handling is in Handler below."""
 
-    def __init__(self, config, desktop, paired_file=PAIRED_FILE):
+    def __init__(self, config, desktop, paired_file=PAIRED_FILE, typer_factory=typer.Typer):
         self.config = config
         self.desktop = desktop
+        self.typer_factory = typer_factory
         self.paired_file = paired_file
         self.devices = self._load_devices()
         self.pairing_code = self._new_pairing_code()
@@ -184,45 +186,38 @@ class ScreenLink:
         with self.job_lock:
             self.job.update(changes)
 
-    def start_typing(self, text, strip_indent):
+    def start_typing(self, text):
         if not isinstance(text, str) or not text.strip():
             raise RequestError(400, "'text' must be a non-empty string")
         if len(text) > self.config["max_text_chars"]:
             raise RequestError(413, f"Text is longer than {self.config['max_text_chars']} characters")
-        if not isinstance(strip_indent, bool):
-            raise RequestError(400, "'strip_indent' must be true or false")
 
-        text = text.replace("\r\n", "\n").replace("\r", "\n")
-        if strip_indent:
-            # For editors that auto-indent new lines (IDEs, code boxes).
-            text = "\n".join(line.lstrip(" \t") for line in text.split("\n"))
+        lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+        total = typer.answer_length(lines)
+        if total == 0:
+            raise RequestError(400, "Nothing to type: the text has no lines the typer would type")
 
         if not self.action_lock.acquire(blocking=False):
             raise RequestError(409, "Another action is already running")
         self.cancel_event.clear()
         with self.job_lock:
             self.job = {"id": self.job["id"] + 1, "state": "typing",
-                        "typed": 0, "total": len(text), "error": None}
+                        "typed": 0, "total": total, "error": None}
             job = dict(self.job)
-        log(f"Typing job {job['id']} started ({len(text)} characters)")
-        threading.Thread(target=self._type_worker, args=(text,), daemon=True).start()
+        log(f"Typing job {job['id']} started ({len(lines)} lines, {total} characters)")
+        threading.Thread(target=self._type_worker, args=(lines,), daemon=True).start()
         return job
 
-    def _type_worker(self, text):
+    def _type_worker(self, lines):
         state, error = "done", None
         try:
             if self.cancel_event.wait(self.config["type_start_delay"]):
                 state = "cancelled"
                 return
-            for count, ch in enumerate(text, start=1):
-                if self.cancel_event.is_set():
-                    state = "cancelled"
-                    return
-                self.desktop.type_char(ch)
-                self._update_job(typed=count)
-                if self.cancel_event.wait(self.config["type_char_interval"]):
-                    state = "cancelled" if count < len(text) else "done"
-                    return
+            run = self.typer_factory(self.cancel_event, lambda n: self._update_job(typed=n))
+            run.type_code(lines)
+        except typer.Cancelled:
+            state = "cancelled"
         except Exception as e:  # noqa: BLE001
             state, error = "error", f"Typing failed: {e}"
         finally:
@@ -341,7 +336,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {"ok": True, "job": app.job_snapshot()})
         elif path == "/type":
             data = self.read_json()
-            job = app.start_typing(data.get("text"), data.get("strip_indent", False))
+            job = app.start_typing(data.get("text"))
             self.send_json(202, {"ok": True, "job": job})
         elif path == "/type/cancel":
             self.read_json()
@@ -374,10 +369,18 @@ class Handler(BaseHTTPRequestHandler):
 
 class ScreenLinkServer(ThreadingHTTPServer):
     daemon_threads = True
+    # On Windows, SO_REUSEADDR lets a second client bind a port that is already in use, and the
+    # phone then talks to whichever one Windows picks. Claim the port exclusively there instead.
+    allow_reuse_address = sys.platform != "win32"
 
     def __init__(self, address, app):
         super().__init__(address, Handler)
         self.app = app
+
+    def server_bind(self):
+        if sys.platform == "win32":
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
 
 def local_ips():
@@ -420,6 +423,7 @@ def main():
         server = ScreenLinkServer((config["host"], config["port"]), app)
     except OSError as e:
         log(f"Cannot listen on {config['host']}:{config['port']}: {e}")
+        log("Is another ScreenLink client already running? Stop it, or use --port to pick another port.")
         sys.exit(1)
 
     print()

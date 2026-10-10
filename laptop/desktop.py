@@ -1,4 +1,4 @@
-"""Desktop automation: screenshots, clicks and text entry (Windows and macOS)."""
+"""Desktop automation: screenshots and clicks (Windows and macOS). Text entry is in typer.py."""
 
 import io
 import platform
@@ -17,10 +17,8 @@ if SYSTEM == "Windows":
         ctypes.windll.user32.SetProcessDPIAware()
 
 from PIL import ImageGrab  # noqa: E402
-from pynput.keyboard import Controller as KeyboardController, Key  # noqa: E402
 from pynput.mouse import Button, Controller as MouseController  # noqa: E402
 
-_keyboard = KeyboardController()
 _mouse = MouseController()
 
 
@@ -51,11 +49,3 @@ def click(x, y):
     _mouse.position = (x, y)  # re-place in case the physical mouse moved meanwhile
     _mouse.click(Button.left)
 
-
-def type_char(ch):
-    if ch == "\n":
-        _keyboard.tap(Key.enter)
-    elif ch == "\t":
-        _keyboard.tap(Key.tab)
-    else:
-        _keyboard.type(ch)

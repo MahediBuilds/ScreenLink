@@ -83,8 +83,8 @@ class LaptopApi(private val host: String, private val port: Int, private val tok
         )
     }
 
-    fun startTyping(text: String, stripIndent: Boolean): TypingJob {
-        val body = JSONObject().put("text", text).put("strip_indent", stripIndent)
+    fun startTyping(text: String): TypingJob {
+        val body = JSONObject().put("text", text)
         return TypingJob.from(request("POST", "/type", body).json().getJSONObject("job"))
     }
 
