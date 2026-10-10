@@ -11,6 +11,22 @@ points.
 ScreenLink never talks to an AI service itself. You choose the AI app and copy its answer back. There's no cloud
 backend, no account and no internet requirement: the phone talks directly to the laptop on your network.
 
+> [!WARNING]
+> **Use ScreenLink responsibly, ethically and only where you are allowed to.** It is meant for controlling your
+> own computer, accessibility and productivity.
+>
+> - **Do not** use it to cheat on exams, quizzes, interviews, certifications or graded work, or anywhere outside
+>   or AI help is not permitted.
+> - **Do not** use it to get around proctoring, anti-cheat or bot-detection systems, or a platform's terms of service.
+> - **Do not** use it on a computer you don't own or aren't authorised to control, or to capture other people's
+>   screens, messages or personal data without their consent.
+> - **Use it safely:** run it only on networks you trust (traffic is unencrypted), close sensitive windows before
+>   taking a screenshot, review AI answers before sending them, watch the laptop while it types or clicks, and
+>   stop the client when you're done.
+>
+> You are solely responsible for how you use this software and for following the rules of your school, employer
+> and any platform you use. The authors accept no liability for misuse. See [Responsible use](#responsible-use).
+
 ## Features
 
 - **On-demand screenshots** of the laptop, with pinch-to-zoom, Android sharing and Save to gallery.
@@ -114,6 +130,22 @@ and rebuild the APK. The **Custom** tab is edited in the app and saved on the ph
 
 If the laptop client says *Cannot listen … Is another ScreenLink client already running?*, close the other window,
 or use another port.
+
+## Responsible use
+
+ScreenLink can capture a screen, pass it to an AI and then type or click with human-like timing. Those same
+features could be misused, so please keep to these rules:
+
+- **Allowed:** controlling your own computer, accessibility, learning, personal projects, and AI help wherever
+  the rules allow it.
+- **Not allowed:** academic or assessment dishonesty; getting around proctoring, anti-cheat or bot detection;
+  controlling computers without permission; collecting other people's data; impersonation, spam or fraud.
+- **If you're unsure** whether AI assistance is allowed in a situation, assume it isn't and ask first.
+- **Stay safe:** use trusted networks only, never expose the port to the internet, hide sensitive windows before
+  screenshots, and reset pairing (`python client.py --reset-pairing`) if a phone is lost.
+
+The software is provided "as is" under the MIT License, without warranty. You are responsible for complying with
+all laws, policies and terms that apply to you.
 
 ## Security
 
