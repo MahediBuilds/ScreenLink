@@ -1,0 +1,2 @@
+Pillow>=10.0      # screenshots (ImageGrab) and JPEG encoding
+pynput>=1.7.6     # mouse clicks and text entry (on macOS also installs pyobjc Quartz)

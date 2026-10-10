@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The laptop client is reached at a user-entered private IP address over plain HTTP
+  on the local network. Android cannot scope cleartext permission to an IP range,
+  so it is allowed here. Control requests are protected by the pairing token; see
+  "Security limitations" in README.md.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

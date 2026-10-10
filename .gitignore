@@ -1,14 +1,17 @@
-_ignore_old/
-_ignore_tests/
-
-screenshots/
-logs/
-
-__phone/logs/
-
+# Python
 __pycache__/
+.pytest_cache/
 
-config/config.json
+# Laptop client local state (pairing tokens and optional overrides)
+laptop/paired.json
+laptop/paired.json.tmp
+laptop/config.json
 
-__phone/__pycache__/
-__phone/logs/
+# Android / Gradle
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.iml
