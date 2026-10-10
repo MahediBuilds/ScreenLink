@@ -1,5 +1,0 @@
-{
-    "server_port": 5000,
-    "heartbeat_timeout": 30,
-    "screenshot_directory": "~/storage/pictures/ScreenLink"
-}
