@@ -46,7 +46,7 @@ object PromptLibrary {
         )
     )
 
-    /** "Fill_in_the_blank" -> "Fill in the blank"; the file name itself is unchanged. */
+    /** "My_prompt" -> "My prompt"; the file name itself is unchanged. */
     fun label(name: String): String =
         name.replace('_', ' ').replace('-', ' ').replace(Regex("\\s+"), " ").trim()
 }

@@ -14,13 +14,13 @@ backend, no account and no internet requirement: the phone talks directly to the
 ## Features
 
 - **On-demand screenshots** of the laptop, with pinch-to-zoom, Android sharing and Save to gallery.
-- **Prompt templates** stored as editable `.txt` files (General, Python, GUI, Email, SQL, …), plus a Custom
+- **Prompt templates** stored as editable `.txt` files (Python, GUI, …), plus a Custom
   prompt you write in the app.
 - **One-tap sharing** of the screenshot and prompt to ChatGPT, Gemini, Claude or any app that accepts images.
 - **Type on laptop:** types the AI's answer line by line, with human-like timing, into whichever window is
   focused, with live progress and a Cancel button.
-- **Click on laptop:** clicks the points from an AI reply to the GUI prompt, using coordinates that work at any
-  screen resolution.
+- **Click on laptop:** glides the mouse to each point from an AI reply to the GUI prompt, at a natural human
+  speed along a slightly curved path, then clicks. Coordinates work at any screen resolution.
 - **Pairing:** a one-time code shown on the laptop links the phone. Knowing the laptop's IP address isn't enough
   to control it.
 - **Clear errors** that say whether the laptop is unreachable, the port is blocked, or the phone isn't paired.
@@ -92,13 +92,12 @@ You only pair once. Both devices remember the pairing across restarts.
 
 Each built-in prompt is a plain text file in
 [`android/app/src/main/assets/prompts/`](android/app/src/main/assets/prompts). The file name becomes the tab name
-(`Fill_in_the_blank.txt` shows as "Fill in the blank"). Tabs appear in this order: **General**, **Python**,
+(`_` and `-` show as spaces, so `My_prompt.txt` shows as "My prompt"). Tabs appear in this order: **General**, **Python**,
 **GUI**, then the rest alphabetically, and finally **Custom**. To change, add or remove a prompt, edit the files
 and rebuild the APK. The **Custom** tab is edited in the app and saved on the phone.
 
 | Prompt | Expected answer | What to do with it |
 |---|---|---|
-| General, Fill in the blank, SQL, Email | Plain text | **Send text to laptop** |
 | Python | Python code with `#IS`/`#IE` [indentation markers](laptop/README.md#indentation-markers) for auto-indenting editors | **Send text to laptop** |
 | GUI | JSON with click points | **Execute clicks on laptop** |
 

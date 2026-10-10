@@ -7,7 +7,7 @@ click points. It runs an HTTP API on your local network. Nothing is sent to the 
 |---|---|
 | `client.py` | HTTP API, pairing and authentication, request validation, the typing job, command-line entry point |
 | `typer.py` | Text entry: types the answer line by line with human-like timing (see [Typing](#typing)) |
-| `desktop.py` | Screen capture and mouse clicks (Windows and macOS) |
+| `desktop.py` | Screen capture and mouse clicks with human-like pointer movement (Windows and macOS) |
 | `config.py` | All settings and their defaults |
 | `requirements.txt` | Dependencies: Pillow and pynput |
 

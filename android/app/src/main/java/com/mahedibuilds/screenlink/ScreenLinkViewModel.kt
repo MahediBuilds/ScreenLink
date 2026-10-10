@@ -224,7 +224,6 @@ class ScreenLinkViewModel(application: Application) : AndroidViewModel(applicati
         // Selections saved before prompts moved to files used enum names; most already match a file name.
         val saved = when (stored) {
             "CLICK" -> "GUI"
-            "FILL_BLANK" -> "Fill_in_the_blank"
             else -> stored
         }
         return prompts.firstOrNull { it.name.equals(saved, ignoreCase = true) }?.name ?: prompts.firstOrNull()?.name
